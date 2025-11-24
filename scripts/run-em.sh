@@ -1,0 +1,1 @@
+PYTHONPATH=. python scripts/migrate_all_clients.py && PYTHONPATH=. python scripts/check_brand_role_discrepancy.py
