@@ -24,7 +24,7 @@ class ProjectRead(ProjectBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class PropertyBase(BaseModel):
@@ -46,4 +46,4 @@ class PropertyRead(PropertyBase):
     updated_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

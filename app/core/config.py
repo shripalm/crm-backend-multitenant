@@ -18,6 +18,7 @@ class Settings(BaseSettings):
 
     # Database Settings (all from .env)
     DB_URLS: dict[str, AnyUrl] = {}
+    DB_KEYS: list[str] = []
 
     @field_validator("DB_URLS", mode="before")
     def parse_db_urls(cls, v: any):
@@ -27,6 +28,12 @@ class Settings(BaseSettings):
             except json.JSONDecodeError:
                 raise ValueError("DB_URLS must be valid JSON")
         return v
+    
+    # get list of DB_KEYS from the keys of DB_URLS
+    @field_validator("DB_KEYS", mode="after")
+    def extract_db_keys(cls, v: list[str], info):
+        db_urls = info.data.get("DB_URLS", {})
+        return list(db_urls.keys())
 
     # Database Connection Pool Settings (all from .env)
     DB_POOL_SIZE: int
@@ -40,31 +47,6 @@ class Settings(BaseSettings):
 
     # Logging Settings (from .env)
     LOG_LVL: str
-
-    # Client mappings and unit short (loaded from app-config.json)
-    BRAND_CREATION: dict = {}
-    UNIT_SHORT: dict = {}
-    DAYS_SHORTS: dict = {}
-    METRIC_FORMATS_CONFIG: dict = {}
-
-    def load_app_config(self, config_path: str):
-        import json
-        import os
-        if not os.path.exists(config_path):
-            raise FileNotFoundError(f"Config file not found: {config_path}")
-        with open(config_path, "r") as f:
-            config = json.load(f)
-            if not config:
-                raise ValueError(f"App config file is empty: {config_path}")
-            # brand-creation is a dict of tenant -> db_name
-            db_mapping = config.get("brand-creation", {})
-            # convert tenant keys to client keys (strip 'tenant_' prefix)
-            self.BRAND_CREATION = db_mapping
-            self.UNIT_SHORT = config.get("unit-short", {})
-            self.DAYS_SHORTS = config.get("days-shorts", {})
-            self.METRIC_FORMATS_CONFIG = config.get("metric-formats", {})
-
-
        
     # pydantic v2 style configuration
     # Use the module-level PROJECT_ROOT so Pydantic doesn't treat this as

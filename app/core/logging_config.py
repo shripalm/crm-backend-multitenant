@@ -63,11 +63,12 @@ def configure_logging():
     logging.getLogger("uvicorn.access").handlers = []
 
     handler = logging.StreamHandler(sys.stdout)
-    # Use ProcessorFormatter to correctly handle log records
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processor=structlog.processors.JSONRenderer(sort_keys=True),
-    )
-    handler.setFormatter(formatter)
+    # Use a stdlib formatter for simple, useful console output.
+    # structlog processors (including wrap_for_formatter) will ensure
+    # structured events are converted into the record's message so the
+    # stdlib formatter can render timestamps and level in the requested format.
+    fmt = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+    handler.setFormatter(logging.Formatter(fmt))
 
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
@@ -80,8 +81,8 @@ def configure_logging():
             structlog.stdlib.add_log_level,
             uppercase_log_level,
             structlog.stdlib.add_log_level_number,
-            get_ist_time,
             get_utc_time,
+            # get_ist_time,
             structlog.stdlib.PositionalArgumentsFormatter(),
             structlog.processors.CallsiteParameterAdder(
                 {

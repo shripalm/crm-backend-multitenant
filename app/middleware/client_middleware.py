@@ -93,7 +93,7 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
             self._add_cors_headers(response, request)
             return response
 
-        client_map = settings.BRAND_CREATION
+        client_map = settings.DB_KEYS
 
         if client not in [*client_map, "admin"]:
             error_response = ErrorResponse(

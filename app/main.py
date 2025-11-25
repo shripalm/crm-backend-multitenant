@@ -47,7 +47,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-logger.info(f"App running on stage path: {settings.STAGE_PATH}")
+logger.info("App running", stage=settings.STAGE_PATH)
 
 # Add exception handlers for standardized error responses
 app.add_exception_handler(HTTPException, http_exception_handler)
