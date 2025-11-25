@@ -31,7 +31,6 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
 
     # Paths that should skip client header validation
     SKIP_PATHS = [
-        "/api/metadata/get-all-clients",
         "/docs",
         "/openapi.json",
         "/api/v1/health",
@@ -40,8 +39,6 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
         "/api/settings/brand_creation",
         "/api/settings/db_version_check",
         "/api/settings/db_drop_all",
-        "/api/common/fe-icons",
-        "/api/admin/client-list",
     ]
 
     def _add_cors_headers(self, response: Response, request: Request):
