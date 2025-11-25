@@ -17,7 +17,7 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
     """Middleware that validates a `client` header and provides a per-request DB session.
 
     Behavior:
-    - Requires header `client` to be one of the allowed keys (lenovo, meesho).
+    - Requires header `client` to be one of the allowed keys (godrej, meesho).
     - Builds a DB URL by replacing the database name in `settings.DB_URLS['default']` with the mapped DB.
     - Creates an async engine and sessionmaker and stores them on `request.state`:
         - request.state.async_engine

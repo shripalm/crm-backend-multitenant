@@ -1,0 +1,2 @@
+- docker desktop
+- docker-compose up

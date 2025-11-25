@@ -48,7 +48,7 @@ The scripts read the client-to-database mapping from `app/core/config.py`:
 
 ```python
 CLIENT_DB_MAP: dict[str, str] = {
-    "lenovo": "app_db",
+    "godrej": "app_db",
     "meesho": "meesho_db",
 }
 ```
