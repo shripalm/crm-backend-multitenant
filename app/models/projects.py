@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Text, Date, Numeric, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, Text, Date, Numeric, TIMESTAMP, ForeignKey,Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 import sqlalchemy as sa
@@ -18,6 +18,7 @@ class Project(Base):
     meta = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()"))
+    is_deleted = Column(Boolean, default=False)
 
     # relationship to properties
     properties = relationship("Property", back_populates="project", cascade="all, delete-orphan")
@@ -35,5 +36,19 @@ class Property(Base):
     attributes = Column(JSONB, nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()"))
     updated_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()"))
+    is_deleted = Column(Boolean, default=False)
 
     project = relationship("Project", back_populates="properties")
+
+
+
+
+
+
+
+
+
+
+
+
+
