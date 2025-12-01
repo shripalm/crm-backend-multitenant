@@ -4,7 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from app.api.v1.routers import health
 from app.api.v1.routers import dev_settings
 from app.api.v1.routers import projects
-
+from app.api.v1.routers import property
 
 from app.middleware.password_middleware import verify_credentials
 
@@ -13,6 +13,7 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
+from app.api.v1.routers import user, role, permission, team
 
 
 from app.utils.exception_handlers import (
@@ -61,6 +62,12 @@ app.add_middleware(ClientHeaderMiddleware)
  
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"]) 
+app.include_router(property.router, prefix="/api/v1/property", tags=["property"])
+
+app.include_router(user.router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(role.router, prefix="/api/v1/roles", tags=["Roles"])
+app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Permissions"])
+app.include_router(team.router, prefix="/api/v1/teams", tags=["Teams"])
 
 
 app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"], dependencies=[Depends(verify_credentials)])
