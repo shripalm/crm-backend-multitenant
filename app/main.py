@@ -61,16 +61,17 @@ app.add_middleware(ClientHeaderMiddleware)
 
  
 app.include_router(health.router, prefix="/api/v1", tags=["health"])
-app.include_router(projects.router, prefix="/api/v1/projects", tags=["projects"]) 
-app.include_router(property.router, prefix="/api/v1/property", tags=["property"])
-
-app.include_router(user.router, prefix="/api/v1/users", tags=["Users"])
-app.include_router(role.router, prefix="/api/v1/roles", tags=["Roles"])
-app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Permissions"])
-app.include_router(team.router, prefix="/api/v1/teams", tags=["Teams"])
-
-
 app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"], dependencies=[Depends(verify_credentials)])
+
+app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects and Properties"]) 
+app.include_router(property.router, prefix="/api/v1/property", tags=["Projects and Properties"])
+
+app.include_router(user.router, prefix="/api/v1/users", tags=["Users and RBAC"])
+app.include_router(role.router, prefix="/api/v1/roles", tags=["Users and RBAC"])
+app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Users and RBAC"])
+app.include_router(team.router, prefix="/api/v1/teams", tags=["Users and RBAC"])
+
+
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event

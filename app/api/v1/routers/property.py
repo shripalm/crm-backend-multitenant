@@ -5,7 +5,7 @@ from typing import List
 from app.db.session import get_db
 from app.schemas.property_schema import PropertyCreate
 from app.schemas.response import StandardResponse
-from app.services.properties import create_property, list_properties ,soft_delete_property,hard_delete_property
+from app.services.properties import create_property, list_properties ,soft_delete_property
 
 router = APIRouter()
 
@@ -36,11 +36,6 @@ async def get_properties(
 
 
 
-@router.delete("/property/{property_id}/soft")
+@router.delete("/property/{property_id}", response_model=StandardResponse)
 async def delete_property_soft(property_id: str, db: AsyncSession = Depends(get_db)):
     return await soft_delete_property(db, property_id)
-
-
-@router.delete("/property/{property_id}/hard")
-async def delete_property_hard(property_id: str, db: AsyncSession = Depends(get_db)):
-    return await hard_delete_property(db, property_id)

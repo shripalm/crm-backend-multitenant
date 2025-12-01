@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.projects import Property
 from app.schemas.property_schema import PropertyCreate, PropertyRead
-from app.utils.response import success_response, internal_server_error
+from app.utils.response import success_response, internal_server_error, error_response
 
 
 async def create_property(db: AsyncSession, project_id: str, payload: PropertyCreate):
@@ -21,7 +21,7 @@ async def create_property(db: AsyncSession, project_id: str, payload: PropertyCr
 
     except Exception as e:
         await db.rollback()
-        raise internal_server_error(f"Failed to create property: {str(e)}")
+        return internal_server_error(f"Failed to create property: {str(e)}")
 
 
 async def list_properties(db: AsyncSession, project_id: str):
@@ -38,14 +38,14 @@ async def list_properties(db: AsyncSession, project_id: str):
         return success_response(data=data, message="Properties fetched")
 
     except Exception as e:
-        raise internal_server_error(f"Failed to list properties: {str(e)}")
+        return internal_server_error(f"Failed to list properties: {str(e)}")
 
 
 async def soft_delete_property(db: AsyncSession, property_id: str):
     try:
         prop = await db.get(Property, property_id)
         if not prop:
-            return None
+            return error_response(404, "Property not found")
 
         prop.is_deleted = True
         await db.commit()
@@ -54,19 +54,4 @@ async def soft_delete_property(db: AsyncSession, property_id: str):
         return success_response(message="Property soft deleted", data={})
     except Exception as e:
         await db.rollback()
-        raise internal_server_error(str(e))
-
-
-async def hard_delete_property(db: AsyncSession, property_id: str):
-    try:
-        prop = await db.get(Property, property_id)
-        if not prop:
-            return None
-
-        await db.delete(prop)
-        await db.commit()
-
-        return success_response(message="Property permanently deleted", data={})
-    except Exception as e:
-        await db.rollback()
-        raise internal_server_error(str(e))
+        return internal_server_error(str(e))

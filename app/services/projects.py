@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.projects import Project
 from app.schemas.project_schema import ProjectCreate, ProjectRead
-from app.utils.response import success_response, internal_server_error
+from app.utils.response import success_response, internal_server_error, error_response
 
 
 async def create_project(db: AsyncSession, project_in: ProjectCreate):
@@ -23,7 +23,7 @@ async def create_project(db: AsyncSession, project_in: ProjectCreate):
             await db.rollback()
         except Exception:
             pass
-        raise internal_server_error(f"Failed to create project: {str(e)}")
+        return internal_server_error(f"Failed to create project: {str(e)}")
 
 
 async def list_projects(db: AsyncSession, limit: int = 100, offset: int = 0):
@@ -35,14 +35,14 @@ async def list_projects(db: AsyncSession, limit: int = 100, offset: int = 0):
         data = [ProjectRead.from_orm(p).dict() for p in projects]
         return success_response(data=data, message="Projects fetched")
     except Exception as e:
-        raise internal_server_error(f"Failed to list projects: {str(e)}")
+        return internal_server_error(f"Failed to list projects: {str(e)}")
     
 
 async def soft_delete_project(db: AsyncSession, project_id: str):
     try:
         project = await db.get(Project, project_id)
         if not project:
-            return None
+            return error_response(404, "Project not found")
 
         project.is_deleted = True
         await db.commit()
@@ -51,7 +51,7 @@ async def soft_delete_project(db: AsyncSession, project_id: str):
         return success_response(message="Project soft deleted", data={})
     except Exception as e:
         await db.rollback()
-        raise internal_server_error(str(e))
+        return internal_server_error(str(e))
 
 
 async def hard_delete_project(db: AsyncSession, project_id: str):
@@ -66,5 +66,5 @@ async def hard_delete_project(db: AsyncSession, project_id: str):
         return success_response(message="Project permanently deleted", data={})
     except Exception as e:
         await db.rollback()
-        raise internal_server_error(str(e))
+        return internal_server_error(str(e))
 

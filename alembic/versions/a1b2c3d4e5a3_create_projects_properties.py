@@ -45,6 +45,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
+        sa.Column("is_deleted", sa.Boolean(), nullable=False, server_default=sa.text("false")),
     )
 
     op.create_table(
@@ -78,6 +79,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("now()"),
         ),
+        sa.Column("is_deleted", sa.Boolean(), nullable=False, server_default=sa.text("false")),
     )
 
     op.create_index("idx_properties_project_id", "properties", ["project_id"])

@@ -10,27 +10,6 @@ depends_on = None
 
 
 def upgrade():
-    op.create_table(
-        "teams",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-        sa.Column("name", sa.String(255), nullable=False, unique=True),
-        sa.Column("description", sa.Text, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-    )
-
-    op.create_table(
-        "users",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-        sa.Column("email", sa.String(255), nullable=False, unique=True),
-        sa.Column("full_name", sa.String(255), nullable=False),
-        sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column("team_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="SET NULL")),
-        sa.Column("active", sa.Boolean, nullable=False, server_default=sa.text("TRUE")),
-        sa.Column("last_login", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-    )
 
     op.create_table(
         "roles",
@@ -73,5 +52,3 @@ def downgrade():
     op.drop_table("user_roles")
     op.drop_table("permissions")
     op.drop_table("roles")
-    op.drop_table("users")
-    op.drop_table("teams")

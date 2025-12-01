@@ -29,11 +29,6 @@ async def list_projects(
     return await projects_service.list_projects(db, limit=limit, offset=offset)
 
 
-@router.delete("/{project_id}/soft")
+@router.delete("/{project_id}", response_model=StandardResponse)
 async def delete_project_soft(project_id: str, db: AsyncSession = Depends(get_db)):
     return await projects_service.soft_delete_project(db, project_id)
-
-
-@router.delete("/{project_id}/hard")
-async def delete_project_hard(project_id: str, db: AsyncSession = Depends(get_db)):
-    return await projects_service.hard_delete_project(db, project_id)

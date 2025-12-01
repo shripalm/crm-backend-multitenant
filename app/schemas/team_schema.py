@@ -17,7 +17,7 @@ class TeamUpdate(BaseModel):
     description: str | None = None
 
 
-class TeamOut(TeamBase):
+class TeamRead(TeamBase):
     id: UUID
     created_at: datetime | None = None
     updated_at: datetime | None = None

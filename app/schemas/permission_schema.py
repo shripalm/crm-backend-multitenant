@@ -18,7 +18,7 @@ class PermissionUpdate(BaseModel):
     description: str | None = None
 
 
-class PermissionOut(PermissionBase):
+class PermissionRead(PermissionBase):
     id: UUID
     created_at: datetime | None = None
 

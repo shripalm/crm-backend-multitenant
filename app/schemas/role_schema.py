@@ -1,7 +1,7 @@
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel
-from app.schemas.permission_schema import PermissionOut
+from app.schemas.permission_schema import PermissionRead
 
 
 class RoleBase(BaseModel):
@@ -18,10 +18,10 @@ class RoleUpdate(BaseModel):
     description: str | None = None
 
 
-class RoleOut(RoleBase):
+class RoleRead(RoleBase):
     id: UUID
     created_at: datetime | None = None
-    permissions: list[PermissionOut] = []
+    permissions: list[PermissionRead] = []
 
     class Config:
         from_attributes = True
