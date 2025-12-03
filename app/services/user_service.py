@@ -41,7 +41,7 @@ async def create_user(db: AsyncSession, data: Any):
 async def list_users(db: AsyncSession):
     """List all users and return serialized response."""
     try:
-        stmt = select(User).options(selectinload(User.roles), selectinload(User.team))
+        stmt = select(User).options(selectinload(User.roles))
         result = await db.execute(stmt)
         users = result.scalars().all()
 
@@ -75,7 +75,7 @@ async def assign_role_to_user(db: AsyncSession, user_id: Any, role_id: Any):
 
         # Refresh user with roles/team loaded for serialization
         refreshed = await db.execute(
-            select(User).where(User.id == user_id).options(selectinload(User.roles), selectinload(User.team))
+            select(User).where(User.id == user_id).options(selectinload(User.roles))
         )
         refreshed_user = refreshed.scalars().one_or_none()
         if refreshed_user is None:
