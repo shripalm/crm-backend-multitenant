@@ -5,6 +5,7 @@ from app.api.v1.routers import health
 from app.api.v1.routers import dev_settings
 from app.api.v1.routers import projects
 from app.api.v1.routers import property
+from app.api.v1.routers import upload
 
 from app.middleware.password_middleware import verify_credentials
 
@@ -65,6 +66,7 @@ app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"
 
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects and Properties"]) 
 app.include_router(property.router, prefix="/api/v1/property", tags=["Projects and Properties"])
+app.include_router(upload.router, prefix="/api/v1/upload", tags=["File Upload"])
 
 app.include_router(user.router, prefix="/api/v1/users", tags=["Users and RBAC"])
 app.include_router(role.router, prefix="/api/v1/roles", tags=["Users and RBAC"])
