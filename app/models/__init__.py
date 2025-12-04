@@ -4,5 +4,6 @@ from .users import User
 from .roles import Role
 from .permissions import Permission
 from .mappings import user_roles, role_permissions
+from .contact import Contact
 
-__all__ = ["Base", "Project", "Property", "User", "Role", "Permission", "user_roles", "role_permissions"]
+__all__ = ["Base", "Project", "Property", "User", "Team", "Role", "Permission", "user_roles", "role_permissions", "Contact"]
