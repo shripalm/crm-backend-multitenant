@@ -34,5 +34,8 @@ class Contact(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+    # Relationships
+    call_reports = relationship("CallReport", back_populates="contact", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Contact name={self.name} email={self.email}>"
