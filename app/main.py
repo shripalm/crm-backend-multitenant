@@ -14,7 +14,7 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
-from app.api.v1.routers import user, role, permission,contact, callreport
+from app.api.v1.routers import user, role, permission, contact, callreport, task
 
 
 
@@ -70,6 +70,7 @@ app.include_router(property.router, prefix="/api/v1/property", tags=["Projects a
 app.include_router(upload.router, prefix="/api/v1/upload", tags=["File Upload"])
 
 app.include_router(user.router, prefix="/api/v1/users", tags=["Users and RBAC"])
+app.include_router(task.router, prefix="/api/v1/users", tags=["Tasks"])
 app.include_router(role.router, prefix="/api/v1/roles", tags=["Users and RBAC"])
 app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Users and RBAC"])
 app.include_router(contact.router, prefix="/api/v1/contacts", tags=["Contacts"])
