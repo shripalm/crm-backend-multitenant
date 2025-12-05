@@ -1,4 +1,4 @@
-Name,Email,Phone,Status
+name,email,contact_no,status
 John Doe,john@example.com,1234567890,Active
 Jane Smith,jane@example.com,0987654321,Active
 Bob Johnson,bob@example.com,1122334455,Inactive

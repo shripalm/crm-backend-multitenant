@@ -30,7 +30,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(255), nullable=False, unique=True),
         sa.Column("full_name", sa.String(255), nullable=False),
         sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column("team_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="SET NULL")),
+        sa.Column("team_name", sa.String(255), nullable=True),
         sa.Column("active", sa.Boolean, nullable=False, server_default=sa.text("TRUE")),
         sa.Column("last_login", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),

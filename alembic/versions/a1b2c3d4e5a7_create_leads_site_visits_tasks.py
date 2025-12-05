@@ -78,21 +78,20 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
         sa.Column("lead_id", postgresql.UUID(as_uuid=True), nullable=True, index=True),
         sa.Column("status", sa.String(100), nullable=True),
-        sa.Column("assigned_to", sa.String(255), nullable=True),
+        sa.Column("assigned_to", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("assigned_to_team", sa.String(255), nullable=True),
+        sa.Column("assigned_by", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("remarks", sa.Text(), nullable=True),
         sa.Column("callback_time", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
     )
 
-    op.create_index("ix_tasks_lead_id", "tasks", ["lead_id"])
 
 
 
 def downgrade() -> None:
     # Drop indexes and tables in reverse order
-    op.drop_index("ix_tasks_lead_id", table_name="tasks")
     op.drop_table("tasks")
 
     op.drop_index("ix_site_visits_assigned_to_id", table_name="site_visits")

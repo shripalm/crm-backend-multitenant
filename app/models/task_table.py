@@ -18,8 +18,9 @@ class Task(Base):
     
     # Task Details
     status = Column(String(100), nullable=True)  # e.g., "Pending", "In Progress", "Completed", "Cancelled"
-    assigned_to = Column(String(255), nullable=True)  # User/Employee name assigned to this task
+    assigned_to = Column(UUID(as_uuid=True), nullable=True)  # User/Employee name assigned to this task
     assigned_to_team = Column(String(255), nullable=True)  # Team name assigned to this task
+    assigned_by = Column(UUID(as_uuid=True), nullable=True)  # User/Employee name who assigned this task
     remarks = Column(Text, nullable=True)  # Detailed notes/comments about the task
     callback_time = Column(DateTime(timezone=True), nullable=True)  # Scheduled callback date/time
     

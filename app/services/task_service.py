@@ -13,6 +13,7 @@ from app.utils.response import (
     internal_server_error,
 )
 
+from app.services.task_workflow_service import crm_data_leads_wf_definition, interested_func, callback_func, lead_drop_func
 
 async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
     """List all tasks assigned to a specific user.
@@ -40,50 +41,41 @@ async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
     except Exception as e:
         return internal_server_error(f"Failed to list tasks for user: {str(e)}")
 
-
-async def update_task_for_user(db: AsyncSession, user_id: UUID, task_id: UUID, data: TaskUpdate):
-    """Update a specific task for a user, focusing on status and callback_time.
-
-    This keeps alignment with the existing pattern where Task.assigned_to
-    stores the user's full_name. It also ensures that when status is
-    "Callback", a callback_time can be set, and when status is
-    "Not Interested", the status is saved as-is and callback_time is cleared.
-    """
+async def update_task_for_user(db: AsyncSession, task_id: UUID, data: TaskUpdate):
+    """Update a specific task for a user, focusing on status and callback_time."""
     try:
-        user = await db.get(User, user_id)
-        if user is None:
-            return error_response(404, "User not found")
-
+        if data.status is None:
+            return error_response(400, "Status is required for update")
+       
         task = await db.get(Task, task_id)
         if task is None:
             return error_response(404, "Task not found")
+        
+        # Keep both the pydantic model and a plain dict for downstream workflows
+        task_model = TaskRead.model_validate(task)
+        task_data = task_model.model_dump()
 
-        # Ensure the task belongs to this user based on assigned_to convention
-        if task.assigned_to != user.full_name:
-            return error_response(403, "Task does not belong to this user")
-
-        # Apply updates only for provided fields
-        if data.status is not None:
-            task.status = data.status
-
-            # When status is Not Interested, clear callback_time
-            if data.status == "Not Interested":
-                task.callback_time = None
-
-        # For Callback status, allow setting callback_time explicitly
-        if data.callback_time is not None:
-            task.callback_time = data.callback_time
-
-        # Optional: remarks or other fields can still be updated via TaskUpdate
-        if data.remarks is not None:
-            task.remarks = data.remarks
-
-        await db.commit()
-        await db.refresh(task)
-
-        task_data = TaskRead.model_validate(task).model_dump()
-        return success_response(data=task_data, message="Task updated")
+        # Now route based on status (use string lower for safe comparisons)
+        status = data.status.strip().lower()
+        if status == "interested":
+            return await interested_func(db, action={"models": {"task": task_data}})
+        elif status == "callback":
+            return await callback_func(
+                db,
+                action={
+                    "models": {"task": task_data},
+                    "data": {**data.model_dump(), "testing_field": "testing_value"},
+                },
+            )
+        elif status == "not interested":
+            return await lead_drop_func(db, 
+                action={
+                    "models": {"task": task_data},
+                    "data": {**data.model_dump(), "testing_field": "testing_value"},
+                }
+            )
+        else:
+            return error_response(400, "Invalid status value")
 
     except Exception as e:
-        await db.rollback()
         return internal_server_error(f"Failed to update task: {str(e)}")

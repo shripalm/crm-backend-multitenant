@@ -3,6 +3,8 @@ import pandas as pd
 from io import BytesIO
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import insert
+from app.models.contact import Contact
 
 from app.utils.response import success_response, internal_server_error, error_response
 
@@ -27,7 +29,7 @@ async def process_file(db: AsyncSession, file_content: bytes, filename: str):
         
         # Clean NaN values
         for record in data:
-            for key, value in record.items():
+            for key, value in list(record.items()):
                 if pd.isna(value):
                     record[key] = None
         
@@ -38,9 +40,27 @@ async def process_file(db: AsyncSession, file_content: bytes, filename: str):
             "file_type": file_type,
             "rows_processed": rows_processed,
             "uploaded_at": datetime.now().isoformat(),
-            "data": data
         }
-        
+
+        print(data)
+
+        if data:
+            # Filter out keys that are not actual Contact columns (protects against extra CSV headers)
+            allowed_columns = set(['name', 'email', 'contact_no'])
+            cleaned_records = [
+                {
+                    k: (str(v).strip() if v is not None else None)
+                    for k, v in record.items()
+                    if k in allowed_columns
+                }
+                for record in data
+            ]
+
+            if cleaned_records:
+                stmt = insert(Contact).values(cleaned_records)
+                await db.execute(stmt)
+                await db.commit()
+
         return success_response(
             data=response_data, 
             message=f"File processed successfully. {rows_processed} rows imported."

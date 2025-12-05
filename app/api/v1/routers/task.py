@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -15,14 +15,19 @@ from app.services.task_service import (
 router = APIRouter()
 
 
-@router.get("/{user_id}/tasks", response_model=StandardResponse[list[TaskRead]])
+@router.get("/list/{user_id}", response_model=StandardResponse[list[TaskRead]])
 async def get_tasks_for_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
     return await list_tasks_for_user(db, user_id)
+    
+@router.get("/search", response_model=StandardResponse[list[TaskRead]])
+async def get_tasks_for_user(
+    user_id: UUID = Query(..., description="User ID to filter tasks for"),
+    db: AsyncSession = Depends(get_db)
+):
+    return await list_tasks_for_user(db, user_id)
 
-
-@router.patch("/{user_id}/tasks/{task_id}", response_model=StandardResponse[TaskRead])
+@router.patch("/update/{task_id}", response_model=StandardResponse)
 async def update_task_for_user_endpoint(
-    user_id: UUID,
     task_id: UUID,
     payload: TaskUpdate,
     db: AsyncSession = Depends(get_db),
@@ -33,4 +38,4 @@ async def update_task_for_user_endpoint(
     statuses like "Not Interested" or "Callback" and, in the case of
     "Callback", provide a callback_time value.
     """
-    return await update_task_for_user(db, user_id, task_id, payload)
+    return await update_task_for_user(db, task_id, payload)

@@ -9,7 +9,7 @@ from app.services import upload as upload_service
 router = APIRouter()
 
 
-@router.post("/", response_model=StandardResponse[dict])
+@router.post("/contacts", response_model=StandardResponse[dict])
 async def upload_file(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db)
