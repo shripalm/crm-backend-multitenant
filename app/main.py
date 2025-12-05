@@ -5,6 +5,7 @@ from app.api.v1.routers import health
 from app.api.v1.routers import dev_settings
 from app.api.v1.routers import projects
 from app.api.v1.routers import property
+from app.api.v1.routers import upload
 
 from app.middleware.password_middleware import verify_credentials
 
@@ -13,7 +14,8 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
-from app.api.v1.routers import user, role, permission, team, contact, callreport
+from app.api.v1.routers import user, role, permission,contact, callreport
+
 
 
 from app.utils.exception_handlers import (
@@ -65,15 +67,13 @@ app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"
 
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects and Properties"]) 
 app.include_router(property.router, prefix="/api/v1/property", tags=["Projects and Properties"])
+app.include_router(upload.router, prefix="/api/v1/upload", tags=["File Upload"])
 
 app.include_router(user.router, prefix="/api/v1/users", tags=["Users and RBAC"])
 app.include_router(role.router, prefix="/api/v1/roles", tags=["Users and RBAC"])
 app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Users and RBAC"])
-app.include_router(team.router, prefix="/api/v1/teams", tags=["Users and RBAC"])
 app.include_router(contact.router, prefix="/api/v1/contacts", tags=["Contacts"])
 app.include_router(callreport.router, prefix="/api/v1/call-reports", tags=["Call Reports"])
-
-
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event
