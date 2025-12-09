@@ -1,5 +1,11 @@
 from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+import jwt
 import logging
+from uuid import UUID
+
+from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -44,3 +50,68 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     plain = _truncate_to_bcrypt_limit(plain_password)
     return pwd_context.verify(plain, hashed_password)
+
+
+def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token.
+    
+    Args:
+        data: Payload data to encode in the token (e.g., user_id, email)
+        expires_delta: Optional custom expiration time
+        
+    Returns:
+        Encoded JWT token string
+    """
+    to_encode = data.copy()
+    
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    
+    to_encode.update({
+        "exp": expire,
+        "iat": datetime.utcnow()
+    })
+    
+    # Convert UUID to string if present
+    if "user_id" in to_encode and isinstance(to_encode["user_id"], UUID):
+        to_encode["user_id"] = str(to_encode["user_id"])
+    
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    return encoded_jwt
+
+
+def verify_token(token: str) -> Optional[Dict[str, Any]]:
+    """Verify and decode a JWT token.
+    
+    Args:
+        token: JWT token string to verify
+        
+    Returns:
+        Decoded payload if valid, None if invalid or expired
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except jwt.ExpiredSignatureError:
+        logger.warning("Token has expired")
+        return None
+    except jwt.InvalidTokenError as e:
+        logger.warning(f"Invalid token: {str(e)}")
+        return None
+
+
+def get_user_id_from_token(token: str) -> Optional[str]:
+    """Extract user_id from a JWT token.
+    
+    Args:
+        token: JWT token string
+        
+    Returns:
+        User ID if token is valid, None otherwise
+    """
+    payload = verify_token(token)
+    if payload:
+        return payload.get("user_id")
+    return None

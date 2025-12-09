@@ -11,7 +11,7 @@ from app.models.contact import Contact
 from app.models.users import User
 from app.schemas.task_schema import TaskRead
 from app.utils.response import success_response, internal_server_error
-from app.utils.logger import logger
+from app.utils.logging import logger
 
 async def search_tasks(
     db: AsyncSession,
