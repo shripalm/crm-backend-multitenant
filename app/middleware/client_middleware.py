@@ -1,11 +1,17 @@
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import make_url
 from sqlalchemy import text
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+
+from app.models.users import User
+from app.db.session import get_db
+from app.core.security import verify_token
 from app.utils.logging import logger
 from app.utils.context_vars import client_context
 from app.core.config import settings
@@ -250,10 +256,113 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
 
         # Set client in contextvars for use in async functions
         client_context.set(client)
+        
+        # Call the next middleware/route handler
+        response = await call_next(request)
+        self._add_cors_headers(response, request)
+        return response
 
-        try:
-            response = await call_next(request)
-            return response
-        finally:
-            # do not dispose cached engines here; they are reused. they will be disposed on app shutdown.
-            pass
+
+# Authentication verification and session
+security = HTTPBearer()
+
+
+async def get_current_user(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """
+    Dependency to get the current authenticated user from JWT token.
+    
+    Args:
+        request: FastAPI request object
+        credentials: HTTP Authorization credentials (Bearer token)
+        db: Database session
+        
+    Returns:
+        User object if authentication is successful
+        
+    Raises:
+        HTTPException: If token is invalid or user not found
+    """
+    token = credentials.credentials
+    
+    # Verify and decode token
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Get user_id from payload
+    user_id = payload.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # Verify user exists and is active
+    from app.services.auth_service import verify_user_token
+    user = await verify_user_token(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return user
+
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """
+    Dependency to ensure current user is active.
+    
+    Args:
+        current_user: Current authenticated user
+        
+    Returns:
+        User object if active
+        
+    Raises:
+        HTTPException: If user is inactive
+    """
+    if not current_user.active:
+        raise HTTPException(
+            status_code=403,
+            detail="Inactive user"
+        )
+    return current_user
+
+
+def get_optional_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> Optional[str]:
+    """
+    Optional authentication dependency.
+    
+    Args:
+        request: FastAPI request object
+        credentials: Optional HTTP Authorization credentials
+        
+    Returns:
+        User ID string if authenticated, None otherwise
+    """
+    if not credentials:
+        return None
+    
+    token = credentials.credentials
+    payload = verify_token(token)
+    
+    if payload:
+        return payload.get("user_id")
+    
+    return None
