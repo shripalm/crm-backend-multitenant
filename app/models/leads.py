@@ -17,7 +17,7 @@ class Lead(Base):
     sales_task_id = Column(UUID(as_uuid=True), nullable=True)
     remark = Column(Text, nullable=True)
     site_visit = Column(Boolean, default=False)
-    last_activity_at = Column(DateTime(timezone=True), nullable=True)
+    last_visited_date = Column(DateTime(timezone=True), nullable=True)
     call_duration = Column(Integer, nullable=True)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 

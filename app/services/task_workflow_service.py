@@ -28,29 +28,42 @@ async def interested_func(db: AsyncSession, action: dict):
 
         # Update task status and remarks
         task.status = "interested"
+        _data = action.get("data", {}).get("additional_data", {})
         remarks = action.get("data", {}).get("remarks")
         if remarks is not None:
             task.remarks = remarks or task.remarks
 
         # Treat lead_id as contact reference and log activity
-        contact_id = action["models"]["task"].get("lead_id")
+        current_lead_id = action["models"]["task"].get("lead_id")
+        current_team = action["models"]["task"].get("assigned_to_team") or "raw"
+        prev_stage = crm_data_leads_wf_definition.get(current_team, {}).get("prev_stage")
+        current_table = crm_data_leads_wf_definition.get(prev_stage, {}).get("table")
         logger.debug(
             "Interested workflow contact lookup",
             task_id=str(task_id),
-            contact_id=str(contact_id) if contact_id else None,
+            contact_id=str(current_lead_id) if current_lead_id else None,
         )
-        if contact_id is not None:
-            contact = await db.get(Contact, contact_id)
-            if contact is not None:
-                activity = CallReport(
-                    contact_id=contact.id,
-                    status="Interested",
-                    last_activity_remark="Lead marked as Interested",
-                    last_activity_date=func.now(),
-                    sales_agent=getattr(task, "assigned_to", None),
+        print(current_team, current_table)
+        if current_lead_id is not None:
+            lead_data = await db.get(current_table, current_lead_id)
+            if lead_data is not None:
+                next_stage = crm_data_leads_wf_definition.get(prev_stage, {}).get("next_stage")
+                next_table = crm_data_leads_wf_definition.get(next_stage, {}).get("table")
+                print(next_stage, next_table)
+                activity = next_table(
+                    # common fields: employee_id, remark, created_at, contact_id
+                    # constants
+                    created_at=func.now(),
+                    # from task table
+                    employee_id=getattr(task, "assigned_to", None),
+                    # from current table
+                    contact_id=lead_data.id,
+                    # from data
+                    remark=f"Lead marked as Interested - {remarks}" if remarks else "Lead marked as Interested",
+                    **(_data or {})
                 )
                 db.add(activity)
-                logger.info("Logged interested activity", contact_id=str(contact.id), task_id=str(task_id))
+                logger.info("Logged interested activity", contact_id=str(activity.id), task_id=str(task_id))
 
         await db.commit()
         await db.refresh(task)
@@ -100,17 +113,21 @@ crm_data_leads_wf_definition = {
     "raw": {
         "table": Contact,
         "next_stage": "presales",
+        "prev_stage": None,
     },
     "presales": {
         "table": CallReport,
         "next_stage": "sales",
+        "prev_stage": "raw",
     },
     "sales": {
         "table": Lead,
         "next_stage": "sitevisit",
+        "prev_stage": "presales",
     },
     "sitevisit": {
         "table": SiteVisit,
         "next_stage": None,
+        "prev_stage": "sales",
     },
 }

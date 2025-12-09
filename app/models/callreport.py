@@ -21,12 +21,12 @@ class CallReport(Base):
     sales_agent = Column(String(255), nullable=True)  # Sales person name
     assigned_date = Column(DateTime(timezone=True), nullable=True)  # When lead was assigned
     last_activity_date = Column(DateTime(timezone=True), nullable=True)  # Last interaction date
-    last_activity_remark = Column(Text, nullable=True)  # Detailed notes about last activity
+    remark = Column(Text, nullable=True)  # Detailed notes about last activity
     status = Column(String(100), nullable=True)  # e.g., "New", "In Progress", "Closed", "Won", "Lost"
     source = Column(String(100), nullable=True)  # e.g., "Website", "Referral", "Cold Call"
     
     # Employee & Call Details
-    employee_id = Column(String(50), nullable=True, index=True)  # Employee identifier
+    employee_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # Employee identifier
     call_duration = Column(Integer, nullable=True)  # Duration in seconds
     next_follow_up = Column(DateTime(timezone=True), nullable=True)  # Next scheduled follow-up
     

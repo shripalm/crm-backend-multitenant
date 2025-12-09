@@ -31,7 +31,7 @@ async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
 
         stmt = (
             select(Task)
-            .where(Task.assigned_to == user.full_name)
+            .where(Task.assigned_to == user_id)
             .order_by(Task.created_at.desc())
         )
         logger.debug(
@@ -80,7 +80,7 @@ async def update_task_for_user(db: AsyncSession, task_id: UUID, data: TaskUpdate
                 db,
                 action={
                     "models": {"task": task_data},
-                    "data": {"remarks": data.remarks},
+                    "data": {"remarks": data.remarks, "additional_data": data.additional_data},
                 },
             )
         elif status == "callback":
