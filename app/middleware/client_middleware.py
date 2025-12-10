@@ -40,6 +40,7 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
         "/docs",
         "/openapi.json",
         "/api/v1/health",
+        # "/api/v1/visibility",
         "/api/settings/db_migrate",
         "/api/settings/db_downgrade",
         "/api/settings/brand_creation",

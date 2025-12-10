@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     active: bool = True
+    team_name: str | None = None
 
 
 class UserCreate(UserBase):
