@@ -14,7 +14,7 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
-from app.api.v1.routers import user, role, permission, contact, callreport, task, auth
+from app.api.v1.routers import user, role, permission, contact, callreport, task, auth, admin_auth, agent_auth
 
 
 
@@ -67,6 +67,8 @@ app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"
 
 # Authentication
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(admin_auth.router, prefix="/api/v1/admin/auth", tags=["Admin Authentication"])
+app.include_router(agent_auth.router, prefix="/api/v1/agents/auth", tags=["Agent Authentication"])
 
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects and Properties"]) 
 app.include_router(property.router, prefix="/api/v1/property", tags=["Projects and Properties"])
