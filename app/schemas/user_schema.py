@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     full_name: str
     team_name: str | None = None
     active: bool = True
+    team_name: str | None = None
 
 
 class UserCreate(UserBase):
