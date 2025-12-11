@@ -14,6 +14,7 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
+from app.api.v1.routers import user, role, permission, contact, callreport, task, lead
 from app.api.v1.routers import user, role, permission, contact, callreport, task, auth
 
 
@@ -78,6 +79,7 @@ app.include_router(role.router, prefix="/api/v1/roles", tags=["Users and RBAC"])
 app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Users and RBAC"])
 app.include_router(contact.router, prefix="/api/v1/contacts", tags=["Contacts"])
 app.include_router(callreport.router, prefix="/api/v1/call-reports", tags=["Call Reports"])
+app.include_router(lead.router, prefix="/api/v1/leads", tags=["Leads"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event

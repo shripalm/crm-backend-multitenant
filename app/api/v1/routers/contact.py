@@ -11,6 +11,7 @@ from app.services.contact_service import (
     get_contact,
     update_contact,
     delete_contact,
+    backfill_unassigned_contacts,
 )
 
 router = APIRouter()
@@ -46,3 +47,9 @@ async def update_contact_by_id(
 async def delete_contact_by_id(contact_id: UUID, db: AsyncSession = Depends(get_db)):
     """Delete a contact"""
     return await delete_contact(db, contact_id)
+
+
+@router.post("/backfill-tasks", response_model=StandardResponse)
+async def backfill_tasks(db: AsyncSession = Depends(get_db)):
+    """Create tasks for existing contacts that have no task assigned yet."""
+    return await backfill_unassigned_contacts(db)

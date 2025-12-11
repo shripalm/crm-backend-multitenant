@@ -14,7 +14,7 @@ class CallReportBase(BaseModel):
     remark: Optional[str] = Field(None, description="Notes about last activity")
     status: Optional[str] = Field(None, max_length=100, description="Status (e.g., New, In Progress, Closed)")
     source: Optional[str] = Field(None, max_length=100, description="Lead source (e.g., Website, Referral)")
-    employee_id: Optional[str] = Field(None, max_length=50, description="Employee identifier")
+    employee_id: Optional[UUID] = Field(None, description="Employee identifier")
     call_duration: Optional[int] = Field(None, ge=0, description="Call duration in seconds")
     next_follow_up: Optional[datetime] = Field(None, description="Next scheduled follow-up date")
 
