@@ -16,12 +16,24 @@ from app.utils.response import (
 from app.utils.logging import logger
 from app.services.task_workflow_service import crm_data_leads_wf_definition, interested_func, callback_func, lead_drop_func
 
+async def list_all_tasks(db: AsyncSession):
+    """List all tasks in the system."""
+    try:
+        stmt = select(Task).order_by(Task.created_at.desc())
+        result = await db.execute(stmt)
+        tasks = result.scalars().all()
+
+        data = [TaskRead.model_validate(t).model_dump() for t in tasks]
+        return success_response(data=data, message="All tasks retrieved")
+    except Exception as e:
+        return internal_server_error(f"Failed to list all tasks: {str(e)}")
+
 async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
     """List all tasks assigned to a specific user.
 
-    The Task table stores the assignee in the `assigned_to` field as a string.
+    The Task table stores the assignee in the `assigned_to` field as a UUID.
     We resolve the user by `user_id` and then match tasks where
-    `Task.assigned_to` equals the user's `full_name`.
+    `Task.assigned_to` equals the user's `id`.
     """
     try:
         user = await db.get(User, user_id)

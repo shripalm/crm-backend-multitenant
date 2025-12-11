@@ -4,6 +4,9 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
+from sqlalchemy import select, update, delete, func
+from app.models.task_table import Task
+from app.models.users import User
 from app.utils.logging import logger
 
 from app.models.contact import Contact
@@ -13,6 +16,23 @@ from app.utils.response import (
     error_response,
     internal_server_error,
 )
+
+from app.services.auto_assign_service import assign_task_for_contact_presales
+
+
+async def _auto_assign_task_for_contact(db: AsyncSession, contact: Contact) -> None:
+    """Auto-assign a new task for the given contact to an active user.
+    
+    Logic:
+    - First try to assign to users in 'presales' team (case-insensitive)
+    - If no presales users, fall back to any active users
+    - Assign to user with fewest tasks (ties broken by user id)
+    - Always set assigned_to_team='presales' as requested
+    """
+    try:
+        await assign_task_for_contact_presales(db, contact)
+    except Exception as e:
+        print(f"Error in auto-assign wrapper: {str(e)}")
 
 
 async def create_contact(db: AsyncSession, data: ContactCreate):
@@ -34,6 +54,9 @@ async def create_contact(db: AsyncSession, data: ContactCreate):
         db.add(contact)
         await db.commit()
         await db.refresh(contact)
+
+        # Auto-assign task to an active presales user based on least load
+        await _auto_assign_task_for_contact(db, contact)
 
         contact_data = ContactRead.model_validate(contact).model_dump()
         logger.info("Contact created successfully", contact_id=str(contact.id))
@@ -126,3 +149,30 @@ async def delete_contact(db: AsyncSession, contact_id: UUID):
         logger.error(f"Failed to delete contact: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to delete contact: {str(e)}")
+
+
+async def backfill_unassigned_contacts(db: AsyncSession):
+    """Create tasks for contacts that currently have no task.
+
+    This can be run once to ensure legacy contacts are assigned.
+    """
+    try:
+        # Find contacts with no task referencing them
+        subq = (
+            select(Task.lead_id)
+            .where(Task.lead_id.is_not(None))
+            .subquery()
+        )
+
+        stmt = select(Contact).where(~Contact.id.in_(select(subq.c.lead_id)))
+        result = await db.execute(stmt)
+        contacts = result.scalars().all()
+
+        created = 0
+        for contact in contacts:
+            await _auto_assign_task_for_contact(db, contact)
+            created += 1
+
+        return success_response(data={"created": created}, message="Backfill completed")
+    except Exception as e:
+        return internal_server_error(f"Failed to backfill tasks: {str(e)}")
