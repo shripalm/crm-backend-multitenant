@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.db.admin_session import get_admin_db
 from app.schemas.agent_auth_schema import (
     AgentLoginRequest,
     AgentLoginResponse,
@@ -27,7 +27,7 @@ router = APIRouter()
 )
 async def agent_register(
     register_data: AgentRegisterRequest,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_admin_db),
 ):
     return await register_agent(db, register_data)
 
@@ -40,7 +40,7 @@ async def agent_register(
 )
 async def agent_login(
     login_data: AgentLoginRequest,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_admin_db),
 ):
     return await authenticate_agent(db, login_data)
 
@@ -53,7 +53,7 @@ async def agent_login(
 )
 async def agent_reset_password(
     reset_data: AgentResetPasswordRequest,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_admin_db),
 ):
     """Reset agent password using email, new_password, and confirm_password."""
     return await reset_agent_password(db, reset_data)

@@ -4,7 +4,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import make_url
-from sqlalchemy import text
+from sqlalchemy import text, select
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -401,7 +401,7 @@ def get_optional_current_admin(
 async def get_current_agent(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security_agent),
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_admin_db),
 ) -> Agent:
     """Dependency to get the current authenticated agent from JWT token.
     
