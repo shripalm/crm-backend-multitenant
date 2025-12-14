@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class SiteVisitBase(BaseModel):
-    employee_id: Optional[UUID] = Field(None, description="User assigned to this visit")
+    assigned_to_id: Optional[UUID] = Field(None, description="User assigned to this visit")
     contact_id: Optional[UUID] = Field(None, description="Related contact")
     visit_frequency: Optional[str] = Field(
         None, max_length=50, description="Frequency of the visit (e.g., Weekly, Monthly)"
@@ -28,7 +28,7 @@ class SiteVisitCreate(SiteVisitBase):
 class SiteVisitUpdate(BaseModel):
     """Schema for updating an existing SiteVisit"""
 
-    employee_id: Optional[UUID] = None
+    assigned_to_id: Optional[UUID] = None
     contact_id: Optional[UUID] = None
     visit_frequency: Optional[str] = Field(None, max_length=50)
     schedule_date: Optional[datetime] = None

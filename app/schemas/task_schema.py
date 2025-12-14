@@ -2,7 +2,8 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field
+
 
 class TaskBase(BaseModel):
     lead_id: Optional[UUID] = Field(None, description="Reference to lead/contact ID")
@@ -23,22 +24,6 @@ class TaskUpdate(BaseModel):
     status: Optional[str] = Field(None, max_length=100)
     remarks: Optional[str] = None
     callback_time: Optional[datetime] = None
-    additional_data: Optional[dict] = None  # For any extra fields needed during updates
-
-    # example
-
-    model_config = ConfigDict(
-        json_schema_extra={
-            "example": {
-                "status": "interested",
-                "remarks": "string",
-                "callback_time": "2025-12-09T21:48:13.823Z",
-                "additional_data": {
-                    "tags": "new, hot"
-                }
-            }
-        }
-    )
 
 
 class TaskRead(TaskBase):

@@ -10,7 +10,9 @@ from app.schemas.role_schema import RoleRead
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str
+    team_name: str | None = None
     active: bool = True
+    team_name: str | None = None
 
 
 class UserCreate(UserBase):

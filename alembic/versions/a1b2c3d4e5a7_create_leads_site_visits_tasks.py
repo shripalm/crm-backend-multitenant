@@ -32,7 +32,7 @@ def upgrade() -> None:
         sa.Column("sales_task_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("remark", sa.Text(), nullable=True),
         sa.Column("site_visit", sa.Boolean(), nullable=False, server_default=sa.text("FALSE")),
-        sa.Column("last_visited_date", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("last_activity_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("call_duration", sa.Integer(), nullable=True),
         sa.Column(
             "employee_id",
@@ -51,7 +51,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column(
-            "employee_id",
+            "assigned_to_id",
             postgresql.UUID(as_uuid=True),
             sa.ForeignKey("users.id", ondelete="SET NULL"),
             nullable=True,
@@ -70,7 +70,7 @@ def upgrade() -> None:
     )
 
     op.create_index("ix_site_visits_contact_id", "site_visits", ["contact_id"])
-    op.create_index("ix_site_visits_employee_id", "site_visits", ["employee_id"])
+    op.create_index("ix_site_visits_assigned_to_id", "site_visits", ["assigned_to_id"])
 
     # Create tasks table
     op.create_table(
@@ -94,7 +94,7 @@ def downgrade() -> None:
     # Drop indexes and tables in reverse order
     op.drop_table("tasks")
 
-    op.drop_index("ix_site_visits_employee_id", table_name="site_visits")
+    op.drop_index("ix_site_visits_assigned_to_id", table_name="site_visits")
     op.drop_index("ix_site_visits_contact_id", table_name="site_visits")
     op.drop_table("site_visits")
 
