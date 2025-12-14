@@ -24,6 +24,7 @@ async def create_user(db: AsyncSession, data: Any):
             email=data.email,
             full_name=data.full_name,
             password_hash=hash_password(data.password),
+            team_name=getattr(data, "team_name", None),
         )
 
         db.add(user)
@@ -41,7 +42,10 @@ async def create_user(db: AsyncSession, data: Any):
 async def list_users(db: AsyncSession):
     """List all users and return serialized response."""
     try:
-        stmt = select(User).options(selectinload(User.roles), selectinload(User.team))
+        # Eagerly load User.roles and Role.permissions to prevent MissingGreenlet errors
+        stmt = select(User).options(
+            selectinload(User.roles).selectinload(Role.permissions)
+        )
         result = await db.execute(stmt)
         users = result.scalars().all()
 
@@ -73,9 +77,11 @@ async def assign_role_to_user(db: AsyncSession, user_id: Any, role_id: Any):
             await db.execute(insert_stmt)
             await db.commit()
 
-        # Refresh user with roles/team loaded for serialization
+        # Refresh user with roles and permissions eagerly loaded for serialization
         refreshed = await db.execute(
-            select(User).where(User.id == user_id).options(selectinload(User.roles), selectinload(User.team))
+            select(User).where(User.id == user_id).options(
+                selectinload(User.roles).selectinload(Role.permissions)
+            )
         )
         refreshed_user = refreshed.scalars().one_or_none()
         if refreshed_user is None:

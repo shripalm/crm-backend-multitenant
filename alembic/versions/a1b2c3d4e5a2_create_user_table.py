@@ -22,14 +22,7 @@ def upgrade() -> None:
     # users
     # Note: `okta_verification` was unspecified in the source; choose Boolean to represent verification state.
 
-    op.create_table(
-        "teams",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, default=uuid.uuid4),
-        sa.Column("name", sa.String(255), nullable=False, unique=True),
-        sa.Column("description", sa.Text, nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
-    )
+  
 
     op.create_table(
         "users",
@@ -37,7 +30,7 @@ def upgrade() -> None:
         sa.Column("email", sa.String(255), nullable=False, unique=True),
         sa.Column("full_name", sa.String(255), nullable=False),
         sa.Column("password_hash", sa.String(255), nullable=False),
-        sa.Column("team_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("teams.id", ondelete="SET NULL")),
+        sa.Column("team_name", sa.String(255), nullable=True),
         sa.Column("active", sa.Boolean, nullable=False, server_default=sa.text("TRUE")),
         sa.Column("last_login", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
@@ -47,4 +40,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table('users')
-    op.drop_table("teams")
+   
