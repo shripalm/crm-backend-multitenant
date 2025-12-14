@@ -11,6 +11,7 @@ from app.schemas.response import StandardResponse
 from app.services.task_service import (
     list_tasks_for_user,
     update_task_for_user,
+    list_all_tasks,
 )
 from app.services.search_filter_service import search_tasks
 
@@ -62,3 +63,8 @@ async def update_task_for_user_endpoint(
     "Callback", provide a callback_time value.
     """
     return await update_task_for_user(db, task_id, payload)
+
+
+@router.get("/all", response_model=StandardResponse[list[TaskRead]])
+async def get_all_tasks(db: AsyncSession = Depends(get_db)):
+    return await list_all_tasks(db)
