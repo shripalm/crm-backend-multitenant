@@ -13,6 +13,8 @@ from app.utils.response import (
     internal_server_error,
 )
 
+from app.services.auto_assign_service import assign_task_for_call_report_sales
+
 
 async def create_call_report(db: AsyncSession, data: CallReportCreate):
     """Create new call report and return serialized response."""
@@ -34,6 +36,8 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
         db.add(call_report)
         await db.commit()
         await db.refresh(call_report)
+
+        await assign_task_for_call_report_sales(db, call_report)
 
         call_report_data = CallReportRead.model_validate(call_report).model_dump()
         return success_response(data=call_report_data, message="Call report created successfully")
