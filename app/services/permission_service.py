@@ -6,14 +6,11 @@ from sqlalchemy import select
 from app.models.permissions import Permission
 from app.schemas.permission_schema import PermissionRead
 from app.utils.response import success_response, internal_server_error
-from app.utils.logging import logger
-
 
 
 async def create_permission(db: AsyncSession, data: Any):
     """Create a Permission and return a serialized response."""
     try:
-        logger.info("Creating permission", name=data.name)
         perm = Permission(
             name=data.name,
             label=data.label,
@@ -24,11 +21,9 @@ async def create_permission(db: AsyncSession, data: Any):
         await db.refresh(perm)
 
         perm_data = PermissionRead.model_validate(perm).model_dump()
-        logger.info("Permission created", permission_id=str(perm.id))
         return success_response(data=perm_data, message="Permission created")
 
     except Exception as e:
-        logger.error(f"Failed to create permission: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to create permission: {str(e)}")
 
@@ -39,10 +34,8 @@ async def list_permissions(db: AsyncSession) -> List[dict]:
         result = await db.execute(select(Permission))
         perms = result.scalars().all()
         data = [PermissionRead.model_validate(p).model_dump() for p in perms]
-        logger.debug("Retrieved permissions", count=len(data))
         return success_response(data=data, message="Permissions retrieved")
 
     except Exception as e:
-        logger.error(f"Failed to list permissions: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to list permissions: {str(e)}")

@@ -14,7 +14,7 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
-from app.api.v1.routers import user, role, permission, contact, callreport, task, auth, sitevisit
+from app.api.v1.routers import user, role, permission, contact, callreport, task, auth, admin_auth, agent_auth, lead, visibility, sitevisit
 
 
 
@@ -67,6 +67,8 @@ app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"
 
 # Authentication
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(admin_auth.router, prefix="/api/v1/admin/auth", tags=["Admin Authentication"])
+app.include_router(agent_auth.router, prefix="/api/v1/agents/auth", tags=["Agent Authentication"])
 
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects and Properties"]) 
 app.include_router(property.router, prefix="/api/v1/property", tags=["Projects and Properties"])
@@ -79,6 +81,8 @@ app.include_router(permission.router, prefix="/api/v1/permissions", tags=["Users
 app.include_router(contact.router, prefix="/api/v1/contacts", tags=["Contacts"])
 app.include_router(callreport.router, prefix="/api/v1/call-reports", tags=["Call Reports"])
 app.include_router(sitevisit.router, prefix="/api/v1/site-visit", tags=['Site Visit'])
+app.include_router(lead.router, prefix="/api/v1/leads", tags=["Leads"])
+app.include_router(visibility.router, prefix="/api/v1/visibility", tags=["User Visibility"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event

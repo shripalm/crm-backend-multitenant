@@ -10,7 +10,7 @@ class LeadBase(BaseModel):
     sales_task_id: Optional[UUID] = None
     remark: Optional[str] = None
     site_visit: bool = False
-    last_visited_date: Optional[datetime] = None
+    last_activity_at: Optional[datetime] = None
     call_duration: Optional[int] = None
     employee_id: Optional[UUID] = None
 
@@ -25,7 +25,7 @@ class LeadUpdate(BaseModel):
     sales_task_id: Optional[UUID] = None
     remark: Optional[str] = None
     site_visit: Optional[bool] = None
-    last_visited_date: Optional[datetime] = None
+    last_activity_at: Optional[datetime] = None
     call_duration: Optional[int] = None
     employee_id: Optional[UUID] = None
 

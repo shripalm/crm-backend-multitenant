@@ -11,10 +11,10 @@ class CallReportBase(BaseModel):
     sales_agent: Optional[str] = Field(None, max_length=255, description="Assigned sales agent name")
     assigned_date: Optional[datetime] = Field(None, description="Date when lead was assigned")
     last_activity_date: Optional[datetime] = Field(None, description="Last interaction date")
-    remark: Optional[str] = Field(None, description="Notes about last activity")
+    last_activity_remark: Optional[str] = Field(None, description="Notes about last activity")
     status: Optional[str] = Field(None, max_length=100, description="Status (e.g., New, In Progress, Closed)")
     source: Optional[str] = Field(None, max_length=100, description="Lead source (e.g., Website, Referral)")
-    employee_id: Optional[str] = Field(None, max_length=50, description="Employee identifier")
+    employee_id: Optional[UUID] = Field(None, description="Employee identifier")
     call_duration: Optional[int] = Field(None, ge=0, description="Call duration in seconds")
     next_follow_up: Optional[datetime] = Field(None, description="Next scheduled follow-up date")
 
@@ -31,7 +31,7 @@ class CallReportUpdate(BaseModel):
     sales_agent: Optional[str] = Field(None, max_length=255)
     assigned_date: Optional[datetime] = None
     last_activity_date: Optional[datetime] = None
-    remark: Optional[str] = None
+    last_activity_remark: Optional[str] = None
     status: Optional[str] = Field(None, max_length=100)
     source: Optional[str] = Field(None, max_length=100)
     employee_id: Optional[str] = Field(None, max_length=50)

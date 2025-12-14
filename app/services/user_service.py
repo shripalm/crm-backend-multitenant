@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 from app.models.users import User
 from app.models.roles import Role
 from app.models.mappings import user_roles
-from app.utils.logging import logger
 
 from app.core.security import hash_password
 from app.schemas.user_schema import UserRead
@@ -21,11 +20,11 @@ from app.utils.response import (
 async def create_user(db: AsyncSession, data: Any):
     """Create new user and return serialized response."""
     try:
-        logger.info(f"Creating user: {data}")
         user = User(
             email=data.email,
             full_name=data.full_name,
             password_hash=hash_password(data.password),
+            team_name=getattr(data, "team_name", None),
         )
 
         db.add(user)
@@ -33,11 +32,9 @@ async def create_user(db: AsyncSession, data: Any):
         await db.refresh(user)
 
         user_data = UserRead.model_validate(user).model_dump()
-        logger.info(f"User created successfully: {user_data}")
         return success_response(data=user_data, message="User created")
 
     except Exception as e:
-        logger.error(f"Failed to create user: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to create user: {str(e)}")
 
@@ -45,13 +42,12 @@ async def create_user(db: AsyncSession, data: Any):
 async def list_users(db: AsyncSession):
     """List all users and return serialized response."""
     try:
-        stmt = select(User).options(selectinload(User.roles))
+        # Eagerly load User.roles and Role.permissions to prevent MissingGreenlet errors
+        stmt = select(User).options(
+            selectinload(User.roles).selectinload(Role.permissions)
+        )
         result = await db.execute(stmt)
         users = result.scalars().all()
-        logger.debug(f"api/v1/users/list_users: Retrieved users: {users}")
-
-        if not users:
-            return error_response(404, "No users found")
 
         data = [UserRead.model_validate(u).model_dump() for u in users]
         return success_response(data=data, message="Users retrieved")
@@ -81,9 +77,11 @@ async def assign_role_to_user(db: AsyncSession, user_id: Any, role_id: Any):
             await db.execute(insert_stmt)
             await db.commit()
 
-        # Refresh user with roles/team loaded for serialization
+        # Refresh user with roles and permissions eagerly loaded for serialization
         refreshed = await db.execute(
-            select(User).where(User.id == user_id).options(selectinload(User.roles))
+            select(User).where(User.id == user_id).options(
+                selectinload(User.roles).selectinload(Role.permissions)
+            )
         )
         refreshed_user = refreshed.scalars().one_or_none()
         if refreshed_user is None:
