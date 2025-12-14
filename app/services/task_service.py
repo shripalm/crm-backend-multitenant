@@ -41,7 +41,7 @@ async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
 
         stmt = (
             select(Task)
-            .where(Task.assigned_to == user.full_name)
+            .where(Task.assigned_to == user_id)
             .order_by(Task.created_at.desc())
         )
         result = await db.execute(stmt)
@@ -70,7 +70,13 @@ async def update_task_for_user(db: AsyncSession, task_id: UUID, data: TaskUpdate
         # Now route based on status (use string lower for safe comparisons)
         status = data.status.strip().lower()
         if status == "interested":
-            return await interested_func(db, action={"models": {"task": task_data}})
+            return await interested_func(
+                db,
+                action={
+                    "models": {"task": task_data},
+                    "data": {"remarks": data.remarks, "additional_data": data.additional_data},
+                },
+            )
         elif status == "callback":
             return await callback_func(
                 db,

@@ -25,7 +25,7 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
             sales_agent=data.sales_agent,
             assigned_date=data.assigned_date,
             last_activity_date=data.last_activity_date,
-            last_activity_remark=data.last_activity_remark,
+            remark=data.remark,
             status=data.status,
             source=data.source,
             employee_id=data.employee_id,
