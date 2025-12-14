@@ -23,7 +23,7 @@ class SiteVisitBase(BaseModel):
 
 class SiteVisitCreate(SiteVisitBase):
     """Schema for creating a new SiteVisit"""
-
+    
 
 class SiteVisitUpdate(BaseModel):
     """Schema for updating an existing SiteVisit"""
