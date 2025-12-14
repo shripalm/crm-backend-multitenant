@@ -4,13 +4,16 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import make_url
-from sqlalchemy import text
+from sqlalchemy import text, select
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from app.models.users import User
+from app.models.admin import Admin
+from app.models.agent import Agent
 from app.db.session import get_db
+from app.db.admin_session import get_admin_db
 from app.core.security import verify_token
 from app.utils.logging import logger
 from app.utils.context_vars import client_context
@@ -266,6 +269,8 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
 
 # Authentication verification and session
 security = HTTPBearer()
+security_admin = HTTPBearer()
+security_agent = HTTPBearer()
 
 
 async def get_current_user(
@@ -318,6 +323,154 @@ async def get_current_user(
         )
     
     return user
+
+
+async def get_current_admin(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security_admin),
+    db: AsyncSession = Depends(get_admin_db),
+) -> Admin:
+    """Dependency to get the current authenticated admin from JWT token.
+    
+    Args:
+        request: FastAPI request object
+        credentials: HTTP Authorization credentials (Bearer token)
+        db: Database session for admin
+        
+    Returns:
+        Admin object if authentication is successful
+        
+    Raises:
+        HTTPException: If token is invalid or admin not found
+    """
+
+    token = credentials.credentials
+
+    # Verify and decode token
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Get admin_id from payload
+    admin_id = payload.get("admin_id")
+    if not admin_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Load admin from database
+    stmt = select(Admin).where(Admin.id == admin_id)
+    result = await db.execute(stmt)
+    admin = result.scalar_one_or_none()
+
+    if not admin:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Admin not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return admin
+
+
+def get_optional_current_admin(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_admin),
+) -> Optional[int]:
+    """Optional admin authentication dependency.
+
+    Returns admin_id if token is valid, otherwise None.
+    """
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+    payload = verify_token(token)
+
+    if payload:
+        return payload.get("admin_id")
+
+    return None
+
+
+async def get_current_agent(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security_agent),
+    db: AsyncSession = Depends(get_admin_db),
+) -> Agent:
+    """Dependency to get the current authenticated agent from JWT token.
+    
+    Args:
+        request: FastAPI request object
+        credentials: HTTP Authorization credentials (Bearer token)
+        db: Database session for agent
+        
+    Returns:
+        Agent object if authentication is successful
+        
+    Raises:
+        HTTPException: If token is invalid or agent not found
+    """
+
+    token = credentials.credentials
+
+    # Verify and decode token
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Get agent_id from payload
+    agent_id = payload.get("agent_id")
+    if not agent_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Load agent from database
+    stmt = select(Agent).where(Agent.id == agent_id)
+    result = await db.execute(stmt)
+    agent = result.scalar_one_or_none()
+
+    if not agent:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Agent not found",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return agent
+
+
+def get_optional_current_agent(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_agent),
+) -> Optional[str]:
+    """Optional agent authentication dependency.
+
+    Returns agent_id if token is valid, otherwise None.
+    """
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+    payload = verify_token(token)
+
+    if payload:
+        return payload.get("agent_id")
+
+    return None
 
 
 async def get_current_active_user(

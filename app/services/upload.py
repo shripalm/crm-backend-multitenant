@@ -14,7 +14,6 @@ from app.utils.response import success_response, internal_server_error, error_re
 async def process_file(db: AsyncSession, file_content: bytes, filename: str):
     """Process Excel or CSV file and return standardized response."""
     try:
-        logger.info(f"Processing file: {filename}")
         file_lower = filename.lower()
         
         # Determine file type and read accordingly
@@ -26,7 +25,6 @@ async def process_file(db: AsyncSession, file_content: bytes, filename: str):
             file_type = "csv"
         else:
             return error_response(400, "Invalid file type. Only .xlsx, .xls, and .csv files are allowed.")
-            logger.error("Invalid file type. Only .xlsx, .xls, and .csv files are allowed.")
         
         # Convert DataFrame to list of dictionaries
         data = df.to_dict(orient='records')
@@ -46,7 +44,7 @@ async def process_file(db: AsyncSession, file_content: bytes, filename: str):
             "uploaded_at": datetime.now().isoformat(),
         }
 
-        logger.debug(f"Data: {data}")
+        print(data)
 
         success_count = 0
         if data:
@@ -93,5 +91,4 @@ async def process_file(db: AsyncSession, file_content: bytes, filename: str):
         )
     
     except Exception as e:
-        logger.error(f"Failed to process file: {str(e)}")
         return internal_server_error(f"Failed to process file: {str(e)}")
