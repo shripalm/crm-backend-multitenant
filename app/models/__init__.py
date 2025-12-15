@@ -8,5 +8,20 @@ from .contact import Contact
 from .sitevisit import SiteVisit
 from .callreport import CallReport
 from .task_table import Task
+from .payment_received import PaymentReceived
 
-__all__ = ["Base", "Project", "Property", "User", "Role", "Permission", "user_roles", "role_permissions", "Contact", "CallReport", "Task", "SiteVisit"]
+__all__ = [
+    "Base",
+    "Project",
+    "Property",
+    "User",
+    "Role",
+    "Permission",
+    "user_roles",
+    "role_permissions",
+    "Contact",
+    "CallReport",
+    "Task",
+    "SiteVisit",
+    "PaymentReceived",
+]
