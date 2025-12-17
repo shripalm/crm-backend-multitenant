@@ -11,6 +11,7 @@ class DueCustomerBase(BaseModel):
     next_follow_up_date: Optional[datetime] = Field(
         None, description="Date and time of the next scheduled follow-up"
     )
+    status: Optional[str] = Field(None, description="Status of the due customer")
 
 
 class DueCustomerCreate(DueCustomerBase):
@@ -20,6 +21,7 @@ class DueCustomerCreate(DueCustomerBase):
 class DueCustomerUpdate(BaseModel):
     last_follow_up_date: Optional[datetime] = None
     next_follow_up_date: Optional[datetime] = None
+    status: Optional[str] = None
 
 
 class DueCustomerRead(DueCustomerBase):

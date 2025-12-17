@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, DateTime, ForeignKey
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -18,6 +18,7 @@ class DueCustomer(Base):
 
     last_follow_up_date = Column(DateTime(timezone=True), nullable=True)
     next_follow_up_date = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String, nullable=True)
 
     # Relationship back to Booking
     booking = relationship("Booking", backref="due_customer", uselist=False)
