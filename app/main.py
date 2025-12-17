@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI, HTTPException, Header, Query
 from fastapi.exceptions import RequestValidationError
  
-from app.api.v1.routers import health
+from app.api.v1.routers import companyinfo, health
 from app.api.v1.routers import dev_settings
 from app.api.v1.routers import projects
 from app.api.v1.routers import property
@@ -84,6 +84,7 @@ app.include_router(sitevisit.router, prefix="/api/v1/site-visit", tags=['Site Vi
 app.include_router(booking.router, prefix="/api/v1/bookings", tags=['Bookings'])
 app.include_router(lead.router, prefix="/api/v1/leads", tags=["Leads"])
 app.include_router(visibility.router, prefix="/api/v1/visibility", tags=["User Visibility"])
+app.include_router(companyinfo.router, prefix="/api/v1/company-info", tags=["Company Info"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event
