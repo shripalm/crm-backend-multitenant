@@ -1,8 +1,14 @@
-from typing import Any
+from typing import Any, Optional, List
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator,
+    T
+)
 
 from app.models.leads import Lead
 from app.models.contact import Contact
@@ -44,38 +50,26 @@ async def create_lead(db: AsyncSession, data: LeadCreate):
         return internal_server_error(f"Failed to create lead: {str(e)}")
 
 
-async def list_leads(db: AsyncSession):
+async def list_leads(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
+    """List all leads and return serialized response."""
     try:
-        stmt = (
-            select(Lead, Contact, User)
-            .join(Contact, Lead.contact_id == Contact.id, isouter=True)
-            .join(User, Lead.employee_id == User.id, isouter=True)
-            .order_by(Lead.created_at.desc())
+        paginator = get_paginator(db)
+        query = select(Lead).order_by(Lead.created_at.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=Lead
         )
-
-        result = await db.execute(stmt)
-        rows = result.unique().all()
-
-        data = []
-        for lead, contact, user in rows:
-            item = {
-                "id": str(lead.id),
-                "created_at": lead.created_at,
-                "assigned_at": lead.assigned_at,
-                "remark": lead.remark,
-                "site_visit": lead.site_visit,
-                "last_visited_date": lead.last_visited_date,
-                "call_duration": lead.call_duration,
-                "contact_name": contact.name if contact else None,
-                "contact": contact.contact_no if contact else None,
-                "source": contact.source if contact else None,
-                "project_name": contact.project_name if contact else None,
-                "property_type": contact.property_type if contact else None,
-                "budget_range": contact.budget_range if contact else None,
-                "employee_name": user.full_name if user else None,
-            }
-            data.append(item)
-        return success_response(data=data, message="Leads retrieved successfully")
+        leads_data = [LeadRead.model_validate(lead).model_dump() for lead in result.data]
+        paginated_response = PaginatedResponse[LeadRead](
+            data=leads_data,
+            meta=result.meta,
+            message="Leads retrieved successfully"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Leads retrieved successfully")
     except Exception as e:
         return internal_server_error(f"Failed to list leads: {str(e)}")
 

@@ -1,5 +1,5 @@
 from http.client import HTTPException
-from typing import Any
+from typing import Any, Optional, List
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete   
@@ -11,6 +11,12 @@ from app.utils.response import (
     success_response,       
     error_response,
     internal_server_error,
+)
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator,
+    T
 )
 
 
@@ -39,16 +45,26 @@ async def create_booking(db: AsyncSession, data: BookingCreate):
         await db.rollback()
         return internal_server_error(f"Failed to create booking:{str(e)}")
     
-async def list_bookings(db: AsyncSession):
+async def list_bookings(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
+    """List all bookings and return serialized response."""
     try:
-        bk = select(Booking).order_by(Booking.booking_date.desc())
-        result = await db.execute(bk)       
-        bookings = result.scalars().all()
-
-        data = [BookingRead.model_validate(bk).model_dump() for bk in bookings]
-        logger.debug("Retrieved bookings", count=len(data))
-        return success_response(data=data, message="Bookings retrieved successfully")
-    
+        paginator = get_paginator(db)
+        query = select(Booking).order_by(Booking.booking_date.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=Booking
+        )
+        bookings_data = [BookingRead.model_validate(bk).model_dump() for bk in result.data]
+        paginated_response = PaginatedResponse[BookingRead](
+            data=bookings_data,
+            meta=result.meta,
+            message="Bookings retrieved successfully"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Bookings retrieved successfully")
     except Exception as e:
         logger.error(f"Failed to list bookings:{str(e)}")
         return internal_server_error(f"Failed to list bookings: {str(e)}")

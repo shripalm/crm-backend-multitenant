@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from typing import Optional
 
 from app.db.session import get_db
 from app.schemas.contact_schema import ContactCreate, ContactRead, ContactUpdate
@@ -14,6 +15,8 @@ from app.services.contact_service import (
     backfill_unassigned_contacts,
 )
 
+from app.utils.pagination import PaginationParams
+from fastapi import Query
 router = APIRouter()
 
 
@@ -23,10 +26,22 @@ async def add_contact(payload: ContactCreate, db: AsyncSession = Depends(get_db)
     return await create_contact(db, payload)
 
 
-@router.get("/", response_model=StandardResponse[list[ContactRead]])
-async def get_contacts(db: AsyncSession = Depends(get_db)):
-    """Get all contacts"""
-    return await list_contacts(db)
+@router.get("/", response_model=StandardResponse)
+async def get_contacts(
+    page: int = Query(1, description="Page number (starts from 1)"),
+    size: int = Query(20, description="Items per page (max 100)"),
+    sort_by: Optional[str] = Query(None, description="Field to sort by"),
+    sort_direction: Optional[str] = Query("desc", description="Sort direction (asc or desc)"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all contacts with pagination"""
+    pagination_params = PaginationParams(
+        page=page,
+        size=size,
+        sort_by=sort_by,
+        sort_direction=sort_direction.lower() if sort_direction else "desc",
+    )
+    return await list_contacts(db, pagination_params)
 
 
 @router.get("/{contact_id}", response_model=StandardResponse[ContactRead])

@@ -11,7 +11,7 @@ from app.schemas.response import StandardResponse
 from app.services.task_service import (
     list_tasks_for_user,
     update_task_for_user,
-    list_all_tasks,
+    list_all_tasks_paginated,
 )
 from app.services.search_filter_service import search_tasks
 
@@ -65,6 +65,20 @@ async def update_task_for_user_endpoint(
     return await update_task_for_user(db, task_id, payload)
 
 
-@router.get("/all", response_model=StandardResponse[list[dict]])
-async def get_all_tasks(db: AsyncSession = Depends(get_db)):
-    return await list_all_tasks(db)
+from app.utils.pagination import PaginationParams
+
+@router.get("/all", response_model=StandardResponse)
+async def get_all_tasks(
+    page: int = Query(1, description="Page number (starts from 1)"),
+    size: int = Query(20, description="Items per page (max 100)"),
+    sort_by: Optional[str] = Query(None, description="Field to sort by"),
+    sort_direction: Optional[str] = Query("desc", description="Sort direction (asc or desc)"),
+    db: AsyncSession = Depends(get_db),
+):
+    pagination_params = PaginationParams(
+        page=page,
+        size=size,
+        sort_by=sort_by,
+        sort_direction=sort_direction.lower() if sort_direction else "desc",
+    )
+    return await list_all_tasks_paginated(db, pagination_params)

@@ -8,6 +8,7 @@ from app.schemas.response import StandardResponse
 from app.schemas.project_schema import ProjectCreate, ProjectRead
 from app.services import projects as projects_service
 from app.utils.logging import logger
+from app.utils.pagination import PaginationParams
 
 router = APIRouter()
 
@@ -77,14 +78,22 @@ async def add_project(
         )
 
 
-@router.get("/", response_model=StandardResponse[List[dict]])
+@router.get("/", response_model=StandardResponse)
 async def list_projects(
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
+    page: int = Query(1, description="Page number (starts from 1)"),
+    size: int = Query(20, description="Items per page (max 100)"),
+    sort_by: Optional[str] = Query(None, description="Field to sort by"),
+    sort_direction: Optional[str] = Query("desc", description="Sort direction (asc or desc)"),
     db: AsyncSession = Depends(get_db)
 ):
     """List projects with pagination. Router simply returns the service result."""
-    return await projects_service.list_projects(db, limit=limit, offset=offset)
+    pagination_params = PaginationParams(
+        page=page,
+        size=size,
+        sort_by=sort_by,
+        sort_direction=sort_direction.lower() if sort_direction else "desc",
+    )
+    return await projects_service.list_projects(db, pagination_params)
 
 
 @router.delete("/{project_id}", response_model=StandardResponse)

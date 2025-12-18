@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,12 @@ from app.utils.response import (
     success_response,
     error_response,
     internal_server_error,
+)
+from app.utils.pagination import (
+    PaginationParams,
+    ContactFilterParams,
+    PaginatedResponse,
+    get_paginator
 )
 
 from app.services.auto_assign_service import assign_task_for_contact_presales
@@ -67,19 +73,55 @@ async def create_contact(db: AsyncSession, data: ContactCreate):
         return internal_server_error(f"Failed to create contact: {str(e)}")
 
 
-async def list_contacts(db: AsyncSession):
-    """List all contacts and return serialized response."""
+async def list_contacts(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+    filter_params: Optional[ContactFilterParams] = None
+):
+    """
+    List contacts with pagination, filtering, and sorting
+    """
     try:
-        stmt = select(Contact).order_by(Contact.created_at.desc())
-        result = await db.execute(stmt)
-        contacts = result.scalars().all()
-
-        data = [ContactRead.model_validate(c).model_dump() for c in contacts]
-        logger.debug("Retrieved contacts", count=len(data))
-        return success_response(data=data, message="Contacts retrieved successfully")
-
+        paginator = get_paginator(db)
+        
+        # Build base query
+        query = select(Contact).options(selectinload(Contact.call_reports))
+        
+        # Get paginated results
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            filter_params=filter_params,
+            model_class=Contact
+        )
+        
+        # Convert contacts to schema format
+        contacts_data = [
+            ContactRead.model_validate(contact).model_dump() 
+            for contact in result.data
+        ]
+        
+        # Build paginated response
+        paginated_response = PaginatedResponse[ContactRead](
+            data=contacts_data,
+            meta=result.meta,
+            message="Contacts retrieved successfully"
+        )
+        
+        logger.info(
+            "Retrieved paginated contacts",
+            page=pagination_params.page,
+            size=pagination_params.size,
+            total=result.meta.total_items
+        )
+        
+        return success_response(
+            data=paginated_response.model_dump(),
+            message="Contacts retrieved successfully"
+        )
+        
     except Exception as e:
-        logger.error(f"Failed to list contacts: {str(e)}")
+        logger.error(f"Failed to list contacts with pagination: {str(e)}")
         return internal_server_error(f"Failed to list contacts: {str(e)}")
 
 
