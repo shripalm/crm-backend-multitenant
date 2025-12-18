@@ -1,5 +1,7 @@
-from typing import Any
+from typing import Any, Optional, List
 from uuid import UUID
+
+from app.utils.pagination import T
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
@@ -13,6 +15,11 @@ from app.utils.response import (
     success_response,
     error_response,
     internal_server_error,
+)
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator
 )
 
 from app.services.auto_assign_service import assign_task_for_call_report_sales
@@ -52,46 +59,26 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
         return internal_server_error(f"Failed to create call report: {str(e)}")
 
 
-async def list_call_reports(db: AsyncSession):
+async def list_call_reports(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
     """List all call reports and return serialized response."""
     try:
-        stmt = (
-            select(CallReport, Contact)
-            .join(Contact, CallReport.contact_id == Contact.id, isouter=True)
-            .order_by(CallReport.created_at.desc())
+        paginator = get_paginator(db)
+        query = select(CallReport).order_by(CallReport.created_at.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=CallReport
         )
-
-        result = await db.execute(stmt)
-        rows = result.all()
-
-        data: list[dict[str, Any]] = []
-        for cr, contact in rows:
-            item = {
-                "id": str(cr.id),
-                "created_at": cr.created_at,
-                "updated_at": cr.updated_at,
-                "tags": cr.tags,
-                "sales_agent": cr.sales_agent,
-                "assigned_date": cr.assigned_date,
-                "last_activity_date": cr.last_activity_date,
-                "remark": cr.remark,
-                "status": cr.status,
-                "source": cr.source,
-                "call_duration": cr.call_duration,
-                "next_follow_up": cr.next_follow_up,
-                # Contact details
-                "name": contact.name if contact else None,
-                "contact": contact.contact_no if contact else None,
-                "email": contact.email if contact else None,
-                "city": contact.city if contact else None,
-                "state": contact.state if contact else None,
-                "project_name": contact.project_name if contact else None,
-                "property_type": contact.property_type if contact else None,
-                "budget_range": contact.budget_range if contact else None,
-            }
-            data.append(item)
-        return success_response(data=data, message="Call reports retrieved successfully")
-
+        call_reports_data = [CallReportRead.model_validate(cr).model_dump() for cr in result.data]
+        paginated_response = PaginatedResponse[CallReportRead](
+            data=call_reports_data,
+            meta=result.meta,
+            message="Call reports retrieved successfully"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Call reports retrieved successfully")
     except Exception as e:
         logger.error(f"Failed to list call reports: {str(e)}")
         return internal_server_error(f"Failed to list call reports: {str(e)}")

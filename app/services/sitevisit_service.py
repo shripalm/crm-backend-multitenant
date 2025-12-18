@@ -1,5 +1,5 @@
 from http.client import HTTPException
-from typing import Any
+from typing import Any, Optional, List
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +13,12 @@ from app.utils.response import (
     success_response,
     error_response,
     internal_server_error,
+)
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator,
+    T
 )
 
 async def create_site_visit(db: AsyncSession, data: SiteVisitCreate):
@@ -41,16 +47,26 @@ async def create_site_visit(db: AsyncSession, data: SiteVisitCreate):
         await db.rollback()
         return internal_server_error(f"Failed to create site visit:{str(e)}")
     
-async def list_site_visit(db: AsyncSession):
+async def list_site_visit(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
+    """List all site visits and return serialized response."""
     try:
-        lsv = select(SiteVisit).order_by(SiteVisit.created_at.desc())
-        result = await db.execute(lsv)
-        site_visit = result.scalars().all()
-
-        data = [SiteVisitRead.model_validate(sv).model_dump() for sv in site_visit]
-        logger.debug("Retrieved site visit", count=len(data))
-        return success_response(data=data, message="Site Visit retrieved successfully")
-    
+        paginator = get_paginator(db)
+        query = select(SiteVisit).order_by(SiteVisit.created_at.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=SiteVisit
+        )
+        site_visit_data = [SiteVisitRead.model_validate(sv).model_dump() for sv in result.data]
+        paginated_response = PaginatedResponse[SiteVisitRead](
+            data=site_visit_data,
+            meta=result.meta,
+            message="Site Visit retrieved successfully"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Site Visit retrieved successfully")
     except Exception as e:
         logger.error(f"Failed to list site visit:{str(e)}")
         return internal_server_error(f"Failed to list site visit: {str(e)}")

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +6,12 @@ from app.models.projects import Project
 from app.schemas.project_schema import ProjectCreate, ProjectRead
 from app.utils.response import success_response, created_response, internal_server_error, error_response
 from app.utils.logging import logger
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator,
+    T
+)
 
 
 async def create_project(db: AsyncSession, project_in: ProjectCreate):
@@ -31,15 +37,26 @@ async def create_project(db: AsyncSession, project_in: ProjectCreate):
         return internal_server_error(f"Failed to create project: {str(e)}")
 
 
-async def list_projects(db: AsyncSession, limit: int = 100, offset: int = 0):
-    """Return a standardized success response containing list of projects."""
+async def list_projects(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
+    """Return a standardized success response containing list of projects with pagination."""
     try:
-        stmt = select(Project).where(Project.is_deleted == False).limit(limit).offset(offset)
-        result = await db.execute(stmt)
-        projects = result.scalars().all()
-        data = [ProjectRead.from_orm(p).dict() for p in projects]
-        logger.debug("Listed projects", count=len(data), limit=limit, offset=offset)
-        return success_response(data=data, message="Projects fetched")
+        paginator = get_paginator(db)
+        query = select(Project).where(Project.is_deleted == False).order_by(Project.created_at.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=Project
+        )
+        projects_data = [ProjectRead.from_orm(p).dict() for p in result.data]
+        paginated_response = PaginatedResponse[ProjectRead](
+            data=projects_data,
+            meta=result.meta,
+            message="Projects fetched"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Projects fetched")
     except Exception as e:
         logger.error(f"Failed to list projects: {str(e)}")
         return internal_server_error(f"Failed to list projects: {str(e)}")

@@ -1,8 +1,11 @@
-from typing import Any
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from app.utils.pagination import (
+    PaginationParams, PaginatedResponse, get_paginator
+)
 
 from app.models.task_table import Task
 from app.models.users import User
@@ -17,9 +20,26 @@ from app.utils.response import (
 from app.utils.logging import logger
 from app.services.task_workflow_service import crm_data_leads_wf_definition, interested_func, callback_func, lead_drop_func
 
-async def list_all_tasks(db: AsyncSession):
-    """List all tasks in the system."""
+async def list_all_tasks_paginated(
+    db: AsyncSession, 
+    pagination_params: PaginationParams = PaginationParams(),
+):
+    """List all tasks in the system with pagination."""
     try:
+        paginator = get_paginator(db)
+        query = select(Task)
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=Task
+        )
+        tasks_data = [TaskRead.model_validate(task).model_dump() for task in result.data]
+        paginated_response = PaginatedResponse[TaskRead](
+            data=tasks_data,
+            meta=result.meta,
+            message="All tasks retrieved"
+        )
+        return success_response(data=paginated_response.model_dump(), message="All tasks retrieved")
         stmt = (
             select(Task, User, Contact)
             .join(User, Task.assigned_to == User.id, isouter=True)
@@ -50,6 +70,7 @@ async def list_all_tasks(db: AsyncSession):
         return success_response(data=data, message="All tasks retrieved")
     except Exception as e:
         return internal_server_error(f"Failed to list all tasks: {str(e)}")
+
 
 async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
     """List all tasks assigned to a specific user.
