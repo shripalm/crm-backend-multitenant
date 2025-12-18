@@ -9,6 +9,7 @@ from .sitevisit import SiteVisit
 from .callreport import CallReport
 from .task_table import Task
 from .payment_received import PaymentReceived
+from .due_customers import DueCustomer
 
 __all__ = [
     "Base",
@@ -23,5 +24,6 @@ __all__ = [
     "CallReport",
     "Task",
     "SiteVisit",
+    "due_customer",
     "PaymentReceived",
 ]
