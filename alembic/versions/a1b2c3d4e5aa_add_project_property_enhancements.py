@@ -1,6 +1,6 @@
 """Add enhanced fields to projects and properties tables
 
-Revision ID: a1b2c3d4e5a10
+Revision ID: a1b2c3d4e5aa
 Revises: a1b2c3d4e5a9
 Create Date: 2025-12-17 10:10:00.000000
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'a1b2c3d4e5a10'
+revision = 'a1b2c3d4e5aa'
 down_revision = 'a1b2c3d4e5a9'
 branch_labels = None
 depends_on = None
