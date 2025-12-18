@@ -2,9 +2,8 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
-from sqlalchemy.orm import selectinload
 from sqlalchemy import select, update, delete, func
+from sqlalchemy.orm import selectinload
 from app.models.task_table import Task
 from app.models.users import User
 from app.utils.logging import logger
