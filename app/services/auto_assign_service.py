@@ -81,7 +81,7 @@ async def assign_task_for_call_report_sales(db: AsyncSession, call_report: CallR
             return
 
         task = Task(
-            lead_id=call_report.id,
+            lead_id=call_report.contact_id,
             assigned_to=selected_user.id,
             assigned_to_team="sales",
             status="pending",
@@ -105,7 +105,7 @@ async def assign_task_for_lead_site_visit(db: AsyncSession, lead: Lead) -> None:
             return
 
         task = Task(
-            lead_id=lead.id,
+            lead_id=lead.contact_id,
             assigned_to=selected_user.id,
             assigned_to_team="sitevisit",
             status="pending",

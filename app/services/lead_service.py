@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.models.leads import Lead
+from app.models.contact import Contact
+from app.models.users import User
 from app.schemas.lead_schema import LeadRead, LeadCreate, LeadUpdate
 from app.utils.response import (
     success_response,
@@ -44,11 +46,35 @@ async def create_lead(db: AsyncSession, data: LeadCreate):
 
 async def list_leads(db: AsyncSession):
     try:
-        stmt = select(Lead).order_by(Lead.created_at.desc())
-        result = await db.execute(stmt)
-        leads = result.scalars().all()
+        stmt = (
+            select(Lead, Contact, User)
+            .join(Contact, Lead.contact_id == Contact.id, isouter=True)
+            .join(User, Lead.employee_id == User.id, isouter=True)
+            .order_by(Lead.created_at.desc())
+        )
 
-        data = [LeadRead.model_validate(l).model_dump() for l in leads]
+        result = await db.execute(stmt)
+        rows = result.unique().all()
+
+        data = []
+        for lead, contact, user in rows:
+            item = {
+                "id": str(lead.id),
+                "created_at": lead.created_at,
+                "assigned_at": lead.assigned_at,
+                "remark": lead.remark,
+                "site_visit": lead.site_visit,
+                "last_visited_date": lead.last_visited_date,
+                "call_duration": lead.call_duration,
+                "contact_name": contact.name if contact else None,
+                "contact": contact.contact_no if contact else None,
+                "source": contact.source if contact else None,
+                "project_name": contact.project_name if contact else None,
+                "property_type": contact.property_type if contact else None,
+                "budget_range": contact.budget_range if contact else None,
+                "employee_name": user.full_name if user else None,
+            }
+            data.append(item)
         return success_response(data=data, message="Leads retrieved successfully")
     except Exception as e:
         return internal_server_error(f"Failed to list leads: {str(e)}")
@@ -56,11 +82,38 @@ async def list_leads(db: AsyncSession):
 
 async def get_lead(db: AsyncSession, lead_id: UUID):
     try:
-        lead = await db.get(Lead, lead_id)
-        if lead is None:
+        stmt = (
+            select(Lead, Contact, User)
+            .join(Contact, Lead.contact_id == Contact.id, isouter=True)
+            .join(User, Lead.employee_id == User.id, isouter=True)
+            .where(Lead.id == lead_id)
+        )
+
+        result = await db.execute(stmt)
+        row = result.unique().first()
+
+        if row is None:
             return error_response(404, "Lead not found")
 
-        lead_data = LeadRead.model_validate(lead).model_dump()
+        lead, contact, user = row
+
+        lead_data: dict[str, Any] = {
+            "id": str(lead.id),
+            "created_at": lead.created_at,
+            "assigned_at": lead.assigned_at,
+            "remark": lead.remark,
+            "site_visit": lead.site_visit,
+            "last_visited_date": lead.last_visited_date,
+            "call_duration": lead.call_duration,
+            "contact_name": contact.name if contact else None,
+            "contact": contact.contact_no if contact else None,
+            "source": contact.source if contact else None,
+            "project_name": contact.project_name if contact else None,
+            "property_type": contact.property_type if contact else None,
+            "budget_range": contact.budget_range if contact else None,
+            "employee_name": user.full_name if user else None,
+        }
+
         return success_response(data=lead_data, message="Lead retrieved successfully")
     except Exception as e:
         return internal_server_error(f"Failed to get lead: {str(e)}")
