@@ -5,6 +5,7 @@ from sqlalchemy import text
 from app.schemas.response import StandardResponse
 from app.utils.response import success_response
 from app.db.session import get_db
+from app.services import upload
 
 router = APIRouter()
 
@@ -109,6 +110,20 @@ async def db_seed(
                 await db.execute(text(stmt))
 
             await db.commit()
+
+            # Process the CSV file for contact imports
+            try:
+                csv_file_path = "uploading-files/test_uploadCSV_200.csv"
+                mock_file = MockUploadFile(csv_file_path)
+                file_content = await mock_file.read()
+                upload_result = await upload.process_file(
+                    db=db,
+                    file_content=file_content,
+                    filename="test_uploadCSV_200.csv"
+                )
+            except Exception as e:
+                # Log the error but don't fail the seeding
+                print(f"File upload processing skipped or failed: {str(e)}")
 
             return success_response(data={"status": "DB Seeding Service ran successfully"})
     except Exception as e:

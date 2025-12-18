@@ -33,12 +33,31 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     """
     Handle validation errors and return standardized error response
     """
+    errors = {}
+    
+    for error in exc.errors():
+        field = error["loc"][-1]  # Get the field name
+        error_type = error["type"].split(".")[-1]  # Get the error type
+        
+        # Generate user-friendly error messages
+        if error_type == "missing":
+            msg = f"{field.replace('_', ' ').title()} is required"
+        elif error_type == "string_type":
+            msg = f"{field.replace('_', ' ').title()} must be a string"
+        elif error_type in ["int_parsing", "float_parsing"]:
+            msg = f"{field.replace('_', ' ').title()} must be a number"
+        elif error_type == "enum":
+            msg = f"Invalid value for {field.replace('_', ' ')}"
+        else:
+            msg = f"Validation error for {field.replace('_', ' ')}"
+            
+        errors[str(field)] = msg
+    
     error_response = ErrorResponse(
         status="422",
         message="Validation failed",
         data={
-            "validation_errors": exc.errors(),
-            "body": str(exc.body) if hasattr(exc, 'body') else None
+            "errors": errors
         }
     )
     

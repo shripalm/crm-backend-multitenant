@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy import Column, String, Boolean, DateTime, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -18,6 +18,11 @@ class User(Base):
     team_name = Column(String(255), nullable=True)
     active = Column(Boolean, default=True)
     last_login = Column(DateTime(timezone=True), nullable=True)
+    
+    # New fields
+    contact = Column(String(20), nullable=True)
+    gender = Column(String(10), nullable=True)
+    address = Column(Text, nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

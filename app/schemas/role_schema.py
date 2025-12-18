@@ -1,7 +1,6 @@
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel
-from app.schemas.permission_schema import PermissionRead
 
 
 class RoleBase(BaseModel):
@@ -10,7 +9,7 @@ class RoleBase(BaseModel):
 
 
 class RoleCreate(RoleBase):
-    pass
+    user_email: str | None = None  # Optional user email to assign role to
 
 
 class RoleUpdate(BaseModel):
@@ -21,7 +20,6 @@ class RoleUpdate(BaseModel):
 class RoleRead(RoleBase):
     id: UUID
     created_at: datetime | None = None
-    permissions: list[PermissionRead] = []
 
     class Config:
         from_attributes = True

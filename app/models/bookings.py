@@ -11,9 +11,11 @@ class Booking(Base):
 
     booking_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
-    site_visit_id = Column(UUID(as_uuid=True), 
-                           ForeignKey("site_visits.id"), on_delete="SET NULL",
-                           nullable=True)
+    site_visit_id = Column(
+            UUID(as_uuid=True),
+            ForeignKey("site_visits.id", ondelete="SET NULL"),
+            nullable=True
+            )
 
     booking_date = Column(DateTime(timezone=True), nullable=True)
     payment_status = Column(String(50), nullable=True)
