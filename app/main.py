@@ -83,6 +83,7 @@ app.include_router(sitevisit.router, prefix="/api/v1/site-visit", tags=['Site Vi
 app.include_router(booking.router, prefix="/api/v1/bookings", tags=['Bookings'])
 app.include_router(lead.router, prefix="/api/v1/leads", tags=["Leads"])
 app.include_router(visibility.router, prefix="/api/v1/visibility", tags=["User Visibility"])
+app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event
