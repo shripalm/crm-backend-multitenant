@@ -22,13 +22,13 @@ async def add_call_report(payload: CallReportCreate, db: AsyncSession = Depends(
     return await create_call_report(db, payload)
 
 
-@router.get("/", response_model=StandardResponse[list[CallReportRead]])
+@router.get("/", response_model=StandardResponse[list[dict]])
 async def get_call_reports(db: AsyncSession = Depends(get_db)):
     """Get all call reports"""
     return await list_call_reports(db)
 
 
-@router.get("/{call_report_id}", response_model=StandardResponse[CallReportRead])
+@router.get("/{call_report_id}", response_model=StandardResponse[dict])
 async def get_call_report_by_id(call_report_id: UUID, db: AsyncSession = Depends(get_db)):
     """Get a single call report by ID"""
     return await get_call_report(db, call_report_id)

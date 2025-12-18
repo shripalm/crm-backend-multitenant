@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.utils.logging import logger
 
 from app.models.callreport import CallReport
+from app.models.contact import Contact
 from app.schemas.callreport_schema import CallReportRead, CallReportCreate, CallReportUpdate
 from app.utils.response import (
     success_response,
@@ -54,12 +55,41 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
 async def list_call_reports(db: AsyncSession):
     """List all call reports and return serialized response."""
     try:
-        stmt = select(CallReport).order_by(CallReport.created_at.desc())
-        result = await db.execute(stmt)
-        call_reports = result.scalars().all()
+        stmt = (
+            select(CallReport, Contact)
+            .join(Contact, CallReport.contact_id == Contact.id, isouter=True)
+            .order_by(CallReport.created_at.desc())
+        )
 
-        data = [CallReportRead.model_validate(cr).model_dump() for cr in call_reports]
-        logger.debug("Retrieved call reports", count=len(data))
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        data: list[dict[str, Any]] = []
+        for cr, contact in rows:
+            item = {
+                "id": str(cr.id),
+                "created_at": cr.created_at,
+                "updated_at": cr.updated_at,
+                "tags": cr.tags,
+                "sales_agent": cr.sales_agent,
+                "assigned_date": cr.assigned_date,
+                "last_activity_date": cr.last_activity_date,
+                "remark": cr.remark,
+                "status": cr.status,
+                "source": cr.source,
+                "call_duration": cr.call_duration,
+                "next_follow_up": cr.next_follow_up,
+                # Contact details
+                "name": contact.name if contact else None,
+                "contact": contact.contact_no if contact else None,
+                "email": contact.email if contact else None,
+                "city": contact.city if contact else None,
+                "state": contact.state if contact else None,
+                "project_name": contact.project_name if contact else None,
+                "property_type": contact.property_type if contact else None,
+                "budget_range": contact.budget_range if contact else None,
+            }
+            data.append(item)
         return success_response(data=data, message="Call reports retrieved successfully")
 
     except Exception as e:
@@ -70,14 +100,44 @@ async def list_call_reports(db: AsyncSession):
 async def get_call_report(db: AsyncSession, call_report_id: UUID):
     """Get a single call report by ID."""
     try:
-        call_report = await db.get(CallReport, call_report_id)
-        
-        if call_report is None:
-            logger.warning("Call report not found", call_report_id=str(call_report_id))
+        stmt = (
+            select(CallReport, Contact)
+            .join(Contact, CallReport.contact_id == Contact.id, isouter=True)
+            .where(CallReport.id == call_report_id)
+        )
+
+        result = await db.execute(stmt)
+        row = result.first()
+
+        if row is None:
             return error_response(404, "Call report not found")
 
-        call_report_data = CallReportRead.model_validate(call_report).model_dump()
-        logger.debug("Fetched call report", call_report_id=str(call_report_id))
+        cr, contact = row
+
+        call_report_data: dict[str, Any] = {
+            "id": str(cr.id),
+            "created_at": cr.created_at,
+            "updated_at": cr.updated_at,
+            "tags": cr.tags,
+            "sales_agent": cr.sales_agent,
+            "assigned_date": cr.assigned_date,
+            "last_activity_date": cr.last_activity_date,
+            "remark": cr.remark,
+            "status": cr.status,
+            "source": cr.source,
+            "call_duration": cr.call_duration,
+            "next_follow_up": cr.next_follow_up,
+            # Contact details
+            "name": contact.name if contact else None,
+            "contact": contact.contact_no if contact else None,
+            "email": contact.email if contact else None,
+            "city": contact.city if contact else None,
+            "state": contact.state if contact else None,
+            "project_name": contact.project_name if contact else None,
+            "property_type": contact.property_type if contact else None,
+            "budget_range": contact.budget_range if contact else None,
+        }
+
         return success_response(data=call_report_data, message="Call report retrieved successfully")
 
     except Exception as e:

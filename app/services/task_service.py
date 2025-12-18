@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from app.models.task_table import Task
 from app.models.users import User
+from app.models.contact import Contact
 from app.schemas.task_schema import TaskRead, TaskUpdate
 from app.utils.response import (
     success_response,
@@ -19,11 +20,33 @@ from app.services.task_workflow_service import crm_data_leads_wf_definition, int
 async def list_all_tasks(db: AsyncSession):
     """List all tasks in the system."""
     try:
-        stmt = select(Task).order_by(Task.created_at.desc())
-        result = await db.execute(stmt)
-        tasks = result.scalars().all()
+        stmt = (
+            select(Task, User, Contact)
+            .join(User, Task.assigned_to == User.id, isouter=True)
+            .join(Contact, Task.lead_id == Contact.id, isouter=True)
+            .order_by(Task.created_at.desc())
+        )
 
-        data = [TaskRead.model_validate(t).model_dump() for t in tasks]
+        result = await db.execute(stmt)
+        rows = result.unique().all()
+
+        data: list[dict[str, Any]] = []
+        for task, user, contact in rows:
+            item = {
+                "id": str(task.id),
+                "created_at": task.created_at,
+                "updated_at": task.updated_at,
+                "status": task.status,
+                # Replace foreign keys with related names
+                "assigned_to": user.full_name if user else None,
+                "assigned_to_team": task.assigned_to_team,
+                "assigned_by": str(task.assigned_by) if task.assigned_by else None,
+                "remarks": task.remarks,
+                "callback_time": task.callback_time,
+                "lead_id": contact.name if contact else None,
+                "contact_no": contact.contact_no if contact else None,
+            }
+            data.append(item)
         return success_response(data=data, message="All tasks retrieved")
     except Exception as e:
         return internal_server_error(f"Failed to list all tasks: {str(e)}")
@@ -42,20 +65,38 @@ async def list_tasks_for_user(db: AsyncSession, user_id: UUID):
             return error_response(404, "User not found")
 
         stmt = (
-            select(Task)
+            select(Task, User, Contact)
+            .join(User, Task.assigned_to == User.id, isouter=True)
+            .join(Contact, Task.lead_id == Contact.id, isouter=True)
             .where(Task.assigned_to == user_id)
             .order_by(Task.created_at.desc())
         )
+
         logger.debug(
             "Task listing query",
             user_id=str(user_id),
             assignee=user.full_name,
         )
         result = await db.execute(stmt)
-        tasks = result.scalars().all()
+        rows = result.unique().all()
 
-        data = [TaskRead.model_validate(t).model_dump() for t in tasks]
-        logger.debug("Listed tasks for user", user_id=str(user_id), count=len(data))
+        data: list[dict[str, Any]] = []
+        for task, user_row, contact in rows:
+            item = {
+                "id": str(task.id),
+                "created_at": task.created_at,
+                "updated_at": task.updated_at,
+                "status": task.status,
+                # Replace foreign keys with related names
+                "assigned_to": user_row.full_name if user_row else None,
+                "assigned_to_team": task.assigned_to_team,
+                "assigned_by": str(task.assigned_by) if task.assigned_by else None,
+                "remarks": task.remarks,
+                "callback_time": task.callback_time,
+                "lead_id": contact.name if contact else None,
+                "contact_no": contact.contact_no if contact else None,
+            }
+            data.append(item)
         return success_response(data=data, message="Tasks retrieved")
 
     except Exception as e:

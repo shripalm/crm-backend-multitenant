@@ -19,7 +19,7 @@ from app.services.search_filter_service import search_tasks
 router = APIRouter()
 
 
-@router.get("/list/{user_id}", response_model=StandardResponse[list[TaskRead]])
+@router.get("/list/{user_id}", response_model=StandardResponse[list[dict]])
 async def get_tasks_for_user(user_id: UUID, db: AsyncSession = Depends(get_db)):
     return await list_tasks_for_user(db, user_id)
     
@@ -65,6 +65,6 @@ async def update_task_for_user_endpoint(
     return await update_task_for_user(db, task_id, payload)
 
 
-@router.get("/all", response_model=StandardResponse[list[TaskRead]])
+@router.get("/all", response_model=StandardResponse[list[dict]])
 async def get_all_tasks(db: AsyncSession = Depends(get_db)):
     return await list_all_tasks(db)

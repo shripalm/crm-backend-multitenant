@@ -22,13 +22,13 @@ async def add_lead(payload: LeadCreate, db: AsyncSession = Depends(get_db)):
     return await create_lead(db, payload)
 
 
-@router.get("/", response_model=StandardResponse[list[LeadRead]])
+@router.get("/", response_model=StandardResponse[list[dict]])
 async def get_leads(db: AsyncSession = Depends(get_db)):
     """Get all leads"""
     return await list_leads(db)
 
 
-@router.get("/{lead_id}", response_model=StandardResponse[LeadRead])
+@router.get("/{lead_id}", response_model=StandardResponse[dict])
 async def get_lead_by_id(lead_id: UUID, db: AsyncSession = Depends(get_db)):
     """Get a single lead by ID"""
     return await get_lead(db, lead_id)
