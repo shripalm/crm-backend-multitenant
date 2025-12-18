@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.projects import Project
 from app.schemas.project_schema import ProjectCreate, ProjectRead
-from app.utils.response import success_response, internal_server_error, error_response
+from app.utils.response import success_response, created_response, internal_server_error, error_response
 from app.utils.logging import logger
 
 
@@ -20,7 +20,7 @@ async def create_project(db: AsyncSession, project_in: ProjectCreate):
         await db.refresh(project)
 
         logger.info("Project created", project_id=str(project.id))
-        return success_response(data=ProjectRead.from_orm(project).dict(), message="Project created")
+        return created_response(data=ProjectRead.from_orm(project).dict(), message="Project created successfully")
     except Exception as e:
         # Attempt rollback if possible
         try:
