@@ -12,7 +12,9 @@ class UserBase(BaseModel):
     full_name: str
     team_name: str | None = None
     active: bool = True
-    team_name: str | None = None
+    contact: str | None = None
+    gender: str | None = None
+    address: str | None = None
 
 
 class UserCreate(UserBase):
@@ -22,6 +24,9 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     full_name: str | None = None
     active: bool | None = None
+    contact: str | None = None
+    gender: str | None = None
+    address: str | None = None
 
 
 class UserRead(UserBase):
