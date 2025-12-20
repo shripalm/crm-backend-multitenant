@@ -33,41 +33,46 @@ async def list_all_tasks_paginated(
             pagination_params=pagination_params,
             model_class=Task
         )
-        tasks_data = [TaskRead.model_validate(task).model_dump() for task in result.data]
+        tasks_data = [TaskRead.model_validate(task) for task in result.data]
+
         paginated_response = PaginatedResponse[TaskRead](
-            data=tasks_data,
+            data=tasks_data,   # ← list[TaskRead]
             meta=result.meta,
             message="All tasks retrieved"
         )
-        return success_response(data=paginated_response.model_dump(), message="All tasks retrieved")
-        stmt = (
-            select(Task, User, Contact)
-            .join(User, Task.assigned_to == User.id, isouter=True)
-            .join(Contact, Task.lead_id == Contact.id, isouter=True)
-            .order_by(Task.created_at.desc())
+
+        return success_response(
+            data=paginated_response.model_dump(),
+            message="All tasks retrieved"
         )
+        # stmt = (
+        #     select(Task, User, Contact)
+        #     .join(User, Task.assigned_to == User.id, isouter=True)
+        #     .join(Contact, Task.lead_id == Contact.id, isouter=True)
+        #     .order_by(Task.created_at.desc())
+        # )
 
-        result = await db.execute(stmt)
-        rows = result.unique().all()
+        # result = await db.execute(stmt)
+        # rows = result.unique().all()
 
-        data: list[dict[str, Any]] = []
-        for task, user, contact in rows:
-            item = {
-                "id": str(task.id),
-                "created_at": task.created_at,
-                "updated_at": task.updated_at,
-                "status": task.status,
-                # Replace foreign keys with related names
-                "assigned_to": user.full_name if user else None,
-                "assigned_to_team": task.assigned_to_team,
-                "assigned_by": str(task.assigned_by) if task.assigned_by else None,
-                "remarks": task.remarks,
-                "callback_time": task.callback_time,
-                "lead_id": contact.name if contact else None,
-                "contact_no": contact.contact_no if contact else None,
-            }
-            data.append(item)
-        return success_response(data=data, message="All tasks retrieved")
+        # data: list[dict[str, Any]] = []
+        # for task, user, contact in rows:
+        #     item = {
+        #         "id": str(task.id),
+        #         "created_at": task.created_at,
+        #         "updated_at": task.updated_at,
+        #         "status": task.status,
+        #         # Replace foreign keys with related names
+        #         "assigned_to": user.full_name if user else None,
+        #         "assigned_to_team": task.assigned_to_team,
+        #         "assigned_by": str(task.assigned_by) if task.assigned_by else None,
+        #         "remarks": task.remarks,
+        #         "callback_time": task.callback_time,
+        #         "lead_id": contact.name if contact else None,
+        #         "contact_no": contact.contact_no if contact else None,
+        #     }
+        #     data.append(item)
+        # return success_response(data=data, message="All tasks retrieved")
     except Exception as e:
         return internal_server_error(f"Failed to list all tasks: {str(e)}")
 

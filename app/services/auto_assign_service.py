@@ -73,8 +73,8 @@ async def assign_task_for_contact_presales(db: AsyncSession, contact: Contact) -
 
 async def assign_task_for_call_report_sales(db: AsyncSession, call_report: CallReport) -> None:
     try:
-        if not call_report.status or call_report.status.strip().lower() != "interested":
-            return
+        # if not call_report.status or call_report.status.strip().lower() != "interested":
+        #     return
 
         selected_user = await _get_least_loaded_user_for_team(db, "sales")
         if selected_user is None:
