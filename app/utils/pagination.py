@@ -2,12 +2,16 @@
 from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, Union
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
-from sqlalchemy import Select, asc, desc, func, text
+from sqlalchemy import Select, asc, desc, func, text, select
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.ext.asyncio import AsyncSession
 from math import ceil
 
-T = TypeVar('T', bound=DeclarativeBase)
+# T = TypeVar('T', bound=DeclarativeBase)
+
+T = TypeVar('T')              # for API / response
+ORM = TypeVar('ORM', bound=DeclarativeBase)  # for SQLAlchemy only
+
 
 class SortDirection(str, Enum):
     ASC = "asc"

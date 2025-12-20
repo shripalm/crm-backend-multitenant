@@ -49,8 +49,10 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
 
         await assign_task_for_call_report_sales(db, call_report)
 
-        call_report_data = CallReportRead.model_validate(call_report).model_dump()
-        logger.info("Call report created successfully", call_report_id=str(call_report.id))
+        call_report_data = CallReportRead.model_validate(
+            call_report).model_dump()
+        logger.info("Call report created successfully",
+                    call_report_id=str(call_report.id))
         return success_response(data=call_report_data, message="Call report created successfully")
 
     except Exception as e:
@@ -72,7 +74,8 @@ async def list_call_reports(
             pagination_params=pagination_params,
             model_class=CallReport
         )
-        call_reports_data = [CallReportRead.model_validate(cr).model_dump() for cr in result.data]
+        call_reports_data = [CallReportRead.model_validate(
+            cr).model_dump() for cr in result.data]
         paginated_response = PaginatedResponse[CallReportRead](
             data=call_reports_data,
             meta=result.meta,
@@ -136,22 +139,25 @@ async def update_call_report(db: AsyncSession, call_report_id: UUID, data: CallR
     """Update an existing call report."""
     try:
         call_report = await db.get(CallReport, call_report_id)
-        
+
         if call_report is None:
-            logger.warning("Call report not found for update", call_report_id=str(call_report_id))
+            logger.warning("Call report not found for update",
+                           call_report_id=str(call_report_id))
             return error_response(404, "Call report not found")
 
         # Update only provided fields
         update_data = data.model_dump(exclude_unset=True)
-        logger.debug("Call report update payload", call_report_id=str(call_report_id), update_data=update_data)
-        
+        logger.debug("Call report update payload", call_report_id=str(
+            call_report_id), update_data=update_data)
+
         for field, value in update_data.items():
             setattr(call_report, field, value)
 
         await db.commit()
         await db.refresh(call_report)
 
-        call_report_data = CallReportRead.model_validate(call_report).model_dump()
+        call_report_data = CallReportRead.model_validate(
+            call_report).model_dump()
         logger.info("Call report updated", call_report_id=str(call_report_id))
         return success_response(data=call_report_data, message="Call report updated successfully")
 
@@ -165,9 +171,10 @@ async def delete_call_report(db: AsyncSession, call_report_id: UUID):
     """Delete a call report by ID."""
     try:
         call_report = await db.get(CallReport, call_report_id)
-        
+
         if call_report is None:
-            logger.warning("Call report not found for delete", call_report_id=str(call_report_id))
+            logger.warning("Call report not found for delete",
+                           call_report_id=str(call_report_id))
             return error_response(404, "Call report not found")
 
         await db.delete(call_report)
