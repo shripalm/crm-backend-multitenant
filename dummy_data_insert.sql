@@ -20,14 +20,12 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO roles (id, name, description, created_at) VALUES
 ('10000000-0000-0000-0000-000000000001', 'presales', 'Presales team member with basic access', NOW()),
 ('10000000-0000-0000-0000-000000000002', 'sales', 'Sales team member with basic access', NOW()),
-('10000000-0000-0000-0000-000000000003', 'sitevisit', 'Site visit team member with basic access', NOW()),
-('10000000-0000-0000-0000-000000000004', 'sales', 'Sales team member with basic access', NOW())
+('10000000-0000-0000-0000-000000000003', 'sitevisit', 'Site visit team member with basic access', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert Role-Permission Mappings
 -- NOTE: We must generate IDs explicitly because the table definition lacks a server_default for ID
 INSERT INTO role_permissions (id, role_id, permission_id) VALUES
--- Admin gets all permissions
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000001', '33333333-3333-3333-3333-333333333333'),
@@ -38,20 +36,15 @@ INSERT INTO role_permissions (id, role_id, permission_id) VALUES
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000001', '88888888-8888-8888-8888-888888888888'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000001', '99999999-9999-9999-9999-999999999999'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000001', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
--- Manager gets most permissions
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000002', '44444444-4444-4444-4444-444444444444'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000002', '55555555-5555-5555-5555-555555555555'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000002', '66666666-6666-6666-6666-666666666666'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000002', '88888888-8888-8888-8888-888888888888'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000002', '99999999-9999-9999-9999-999999999999'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000002', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
--- Sales Agent gets basic permissions
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000003', '88888888-8888-8888-8888-888888888888'),
 (uuid_generate_v4(), '10000000-0000-0000-0000-000000000003', '99999999-9999-9999-9999-999999999999'),
-(uuid_generate_v4(), '10000000-0000-0000-0000-000000000003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
--- Marketing gets view and contact permissions
-(uuid_generate_v4(), '10000000-0000-0000-0000-000000000004', '88888888-8888-8888-8888-888888888888'),
-(uuid_generate_v4(), '10000000-0000-0000-0000-000000000004', '99999999-9999-9999-9999-999999999999')
+(uuid_generate_v4(), '10000000-0000-0000-0000-000000000003', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
 ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- Insert Users
@@ -65,11 +58,10 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Insert User-Role Mappings
 INSERT INTO user_roles (id, user_id, role_id) VALUES
-(uuid_generate_v4(), '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001'), -- John is Admin
-(uuid_generate_v4(), '20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002'), -- Sarah is Manager
-(uuid_generate_v4(), '20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003'), -- Mike is Sales Agent
-(uuid_generate_v4(), '20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000003'), -- Lisa is Sales Agent
-(uuid_generate_v4(), '20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000004')  -- David is Marketing
+(uuid_generate_v4(), '20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001'),
+(uuid_generate_v4(), '20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002'),
+(uuid_generate_v4(), '20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003'),
+(uuid_generate_v4(), '20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000003')
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
 -- Insert Projects
@@ -81,14 +73,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Insert Properties
 INSERT INTO properties (id, project_id, unit_number, size, price, status, attributes, is_deleted, created_at, updated_at) VALUES
--- Green Valley Residency
 ('40000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'A-101', 1250.00, 8500000, 'available', '{"bedrooms": 2, "bathrooms": 2, "floor": 1, "facing": "East"}', false, NOW(), NOW()),
 ('40000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001', 'A-102', 1450.00, 9800000, 'booked', '{"bedrooms": 3, "bathrooms": 2, "floor": 1, "facing": "West"}', false, NOW(), NOW()),
 ('40000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000001', 'B-201', 1850.00, 12500000, 'available', '{"bedrooms": 3, "bathrooms": 3, "floor": 2, "facing": "North"}', false, NOW(), NOW()),
--- Silver Heights Tower
 ('40000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000002', 'T1-501', 980.00, 15000000, 'available', '{"bedrooms": 2, "bathrooms": 2, "floor": 5, "facing": "South"}', false, NOW(), NOW()),
 ('40000000-0000-0000-0000-000000000005', '30000000-0000-0000-0000-000000000002', 'T1-502', 1200.00, 18000000, 'sold', '{"bedrooms": 2, "bathrooms": 2, "floor": 5, "facing": "East"}', false, NOW(), NOW()),
--- Ocean View Apartments
 ('40000000-0000-0000-0000-000000000006', '30000000-0000-0000-0000-000000000003', 'OV-101', 1600.00, 22000000, 'available', '{"bedrooms": 3, "bathrooms": 3, "floor": 1, "facing": "Sea"}', false, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
