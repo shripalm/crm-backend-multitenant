@@ -7,8 +7,11 @@ from app.utils.logging import logger
 from sqlalchemy import func
 
 from app.utils.response import success_response, error_response, internal_server_error
+from app.utils.logging import logger
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import func
+
 
 async def interested_func(db: AsyncSession, action: dict):
     """Workflow for marking a task/lead as Interested.
@@ -56,6 +59,7 @@ async def interested_func(db: AsyncSession, action: dict):
         logger.info("Task marked as interested", task_id=str(task_id))
         return success_response(data={"id": task_id}, message="Marked as Interested")
     except Exception as e:
+        logger.error(f"Failed interested workflow for task {task_id}: {str(e)}")
         return internal_server_error(f"Failed to update task: {str(e)}")
 
 
@@ -70,11 +74,14 @@ async def callback_func(db: AsyncSession, action: object) -> bool:
         task.remarks = action["data"]["remarks"] or task.remarks
         await db.commit()
         await db.refresh(task)
+        logger.info("Task marked for callback", task_id=str(task_id))
         return success_response(data={"id": task_id}, message="Marked for Callback")
     except Exception as e:
+        logger.error(f"Failed callback workflow for task {task_id}: {str(e)}")
         return internal_server_error(f"Failed to update task: {str(e)}")
 
-async def lead_drop_func(db: AsyncSession, action: object) -> bool: # not interested
+
+async def lead_drop_func(db: AsyncSession, action: object) -> bool:  # not interested
     try:
         task_id = action["models"]["task"]["id"]
         task = await db.get(Task, task_id)
@@ -84,10 +91,12 @@ async def lead_drop_func(db: AsyncSession, action: object) -> bool: # not intere
         task.remarks = action["data"]["remarks"] or task.remarks
         await db.commit()
         await db.refresh(task)
+        logger.info("Task marked as not interested", task_id=str(task_id))
         return success_response(data={"id": task_id}, message="Marked as Not Interested")
     except Exception as e:
+        logger.error(f"Failed not interested workflow for task {task_id}: {str(e)}")
         return internal_server_error(f"Failed to update task: {str(e)}")
-    
+
 
 crm_data_leads_wf_definition = {
     "raw": {

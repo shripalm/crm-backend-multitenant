@@ -1,40 +1,64 @@
-from typing import List
+from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.projects import Project
 from app.schemas.project_schema import ProjectCreate, ProjectRead
-from app.utils.response import success_response, internal_server_error, error_response
+from app.utils.response import success_response, created_response, internal_server_error, error_response
+from app.utils.logging import logger
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator,
+    T
+)
 
 
 async def create_project(db: AsyncSession, project_in: ProjectCreate):
     """Create a new Project record and return standardized response."""
     try:
         payload = project_in.dict(exclude_none=True)
+        logger.info("Creating project", payload=payload)
+        logger.debug("Project payload", payload=payload)
         project = Project(**payload)
         db.add(project)
         await db.commit()
         await db.refresh(project)
 
-        return success_response(data=ProjectRead.from_orm(project).dict(), message="Project created")
+        logger.info("Project created", project_id=str(project.id))
+        return created_response(data=ProjectRead.from_orm(project).dict(), message="Project created successfully")
     except Exception as e:
         # Attempt rollback if possible
         try:
             await db.rollback()
         except Exception:
             pass
+        logger.error(f"Failed to create project: {str(e)}")
         return internal_server_error(f"Failed to create project: {str(e)}")
 
 
-async def list_projects(db: AsyncSession, limit: int = 100, offset: int = 0):
-    """Return a standardized success response containing list of projects."""
+async def list_projects(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
+    """Return a standardized success response containing list of projects with pagination."""
     try:
-        stmt = select(Project).where(Project.is_deleted == False).limit(limit).offset(offset)
-        result = await db.execute(stmt)
-        projects = result.scalars().all()
-        data = [ProjectRead.from_orm(p).dict() for p in projects]
-        return success_response(data=data, message="Projects fetched")
+        paginator = get_paginator(db)
+        query = select(Project).where(Project.is_deleted == False).order_by(Project.created_at.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=Project
+        )
+        projects_data = [ProjectRead.from_orm(p).dict() for p in result.data]
+        paginated_response = PaginatedResponse[ProjectRead](
+            data=projects_data,
+            meta=result.meta,
+            message="Projects fetched"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Projects fetched")
     except Exception as e:
+        logger.error(f"Failed to list projects: {str(e)}")
         return internal_server_error(f"Failed to list projects: {str(e)}")
     
 
@@ -42,15 +66,19 @@ async def soft_delete_project(db: AsyncSession, project_id: str):
     try:
         project = await db.get(Project, project_id)
         if not project:
+            logger.warning("Project not found for soft delete", project_id=project_id)
             return error_response(404, "Project not found")
 
         project.is_deleted = True
         await db.commit()
         await db.refresh(project)
 
+        logger.info("Project soft deleted", project_id=project_id)
+        logger.debug("Project soft delete state", project_id=project_id, is_deleted=project.is_deleted)
         return success_response(message="Project soft deleted", data={})
     except Exception as e:
         await db.rollback()
+        logger.error(f"Failed to soft delete project: {str(e)}")
         return internal_server_error(str(e))
 
 
@@ -58,13 +86,16 @@ async def hard_delete_project(db: AsyncSession, project_id: str):
     try:
         project = await db.get(Project, project_id)
         if not project:
+            logger.warning("Project not found for hard delete", project_id=project_id)
             return None
 
         await db.delete(project)
         await db.commit()
 
+        logger.info("Project hard deleted", project_id=project_id)
         return success_response(message="Project permanently deleted", data={})
     except Exception as e:
         await db.rollback()
+        logger.error(f"Failed to hard delete project: {str(e)}")
         return internal_server_error(str(e))
 

@@ -3,10 +3,12 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 
 from app.models.users import User
 from app.models.roles import Role
 from app.models.mappings import user_roles
+from app.utils.logging import logger
 
 from app.core.security import hash_password
 from app.schemas.user_schema import UserRead
@@ -20,11 +22,15 @@ from app.utils.response import (
 async def create_user(db: AsyncSession, data: Any):
     """Create new user and return serialized response."""
     try:
+        logger.info(f"Creating user: {data}")
         user = User(
             email=data.email,
             full_name=data.full_name,
             password_hash=hash_password(data.password),
             team_name=getattr(data, "team_name", None),
+            contact=getattr(data, "contact", None),
+            gender=getattr(data, "gender", None),
+            address=getattr(data, "address", None),
         )
 
         db.add(user)
@@ -32,9 +38,21 @@ async def create_user(db: AsyncSession, data: Any):
         await db.refresh(user)
 
         user_data = UserRead.model_validate(user).model_dump()
+        logger.info(f"User created successfully: {user_data}")
         return success_response(data=user_data, message="User created")
 
+    except IntegrityError as e:
+        await db.rollback()
+        # Check if it's a duplicate email error
+        if "users_email_key" in str(e) or "duplicate key value violates unique constraint" in str(e):
+            logger.warning(f"Duplicate email attempt: {data.email}")
+            return error_response(409, "User with this email already exists")
+        else:
+            logger.error(f"Integrity error creating user: {str(e)}")
+            return internal_server_error(f"Failed to create user: {str(e)}")
+    
     except Exception as e:
+        logger.error(f"Failed to create user: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to create user: {str(e)}")
 
@@ -48,6 +66,10 @@ async def list_users(db: AsyncSession):
         )
         result = await db.execute(stmt)
         users = result.scalars().all()
+        logger.debug(f"api/v1/users/list_users: Retrieved users: {users}")
+
+        if not users:
+            return error_response(404, "No users found")
 
         data = [UserRead.model_validate(u).model_dump() for u in users]
         return success_response(data=data, message="Users retrieved")

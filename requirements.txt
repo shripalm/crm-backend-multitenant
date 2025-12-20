@@ -30,6 +30,7 @@ debugpy>=1.8.0
 opencv-python-headless==4.10.0.84
 yt-dlp>=2024.8.6
 email-validator>=2.1.0
+sendgrid>=6.11.0
 
 # Pin bcrypt backend to avoid passlib backend detection issues in container
 bcrypt==4.0.1

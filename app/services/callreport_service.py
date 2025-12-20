@@ -1,16 +1,25 @@
-from typing import Any
+from typing import Any, Optional, List
 from uuid import UUID
+
+from app.utils.pagination import T
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
+from app.utils.logging import logger
 
 from app.models.callreport import CallReport
+from app.models.contact import Contact
 from app.schemas.callreport_schema import CallReportRead, CallReportCreate, CallReportUpdate
 from app.utils.response import (
     success_response,
     error_response,
     internal_server_error,
+)
+from app.utils.pagination import (
+    PaginationParams,
+    PaginatedResponse,
+    get_paginator
 )
 
 from app.services.auto_assign_service import assign_task_for_call_report_sales
@@ -19,6 +28,7 @@ from app.services.auto_assign_service import assign_task_for_call_report_sales
 async def create_call_report(db: AsyncSession, data: CallReportCreate):
     """Create new call report and return serialized response."""
     try:
+        logger.info("Creating call report", contact_id=str(data.contact_id))
         call_report = CallReport(
             contact_id=data.contact_id,
             tags=data.tags,
@@ -40,39 +50,85 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
         await assign_task_for_call_report_sales(db, call_report)
 
         call_report_data = CallReportRead.model_validate(call_report).model_dump()
+        logger.info("Call report created successfully", call_report_id=str(call_report.id))
         return success_response(data=call_report_data, message="Call report created successfully")
 
     except Exception as e:
+        logger.error(f"Failed to create call report: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to create call report: {str(e)}")
 
 
-async def list_call_reports(db: AsyncSession):
+async def list_call_reports(
+    db: AsyncSession,
+    pagination_params: PaginationParams,
+):
     """List all call reports and return serialized response."""
     try:
-        stmt = select(CallReport).order_by(CallReport.created_at.desc())
-        result = await db.execute(stmt)
-        call_reports = result.scalars().all()
-
-        data = [CallReportRead.model_validate(cr).model_dump() for cr in call_reports]
-        return success_response(data=data, message="Call reports retrieved successfully")
-
+        paginator = get_paginator(db)
+        query = select(CallReport).order_by(CallReport.created_at.desc())
+        result = await paginator.paginate(
+            query=query,
+            pagination_params=pagination_params,
+            model_class=CallReport
+        )
+        call_reports_data = [CallReportRead.model_validate(cr).model_dump() for cr in result.data]
+        paginated_response = PaginatedResponse[CallReportRead](
+            data=call_reports_data,
+            meta=result.meta,
+            message="Call reports retrieved successfully"
+        )
+        return success_response(data=paginated_response.model_dump(), message="Call reports retrieved successfully")
     except Exception as e:
+        logger.error(f"Failed to list call reports: {str(e)}")
         return internal_server_error(f"Failed to list call reports: {str(e)}")
 
 
 async def get_call_report(db: AsyncSession, call_report_id: UUID):
     """Get a single call report by ID."""
     try:
-        call_report = await db.get(CallReport, call_report_id)
-        
-        if call_report is None:
+        stmt = (
+            select(CallReport, Contact)
+            .join(Contact, CallReport.contact_id == Contact.id, isouter=True)
+            .where(CallReport.id == call_report_id)
+        )
+
+        result = await db.execute(stmt)
+        row = result.first()
+
+        if row is None:
             return error_response(404, "Call report not found")
 
-        call_report_data = CallReportRead.model_validate(call_report).model_dump()
+        cr, contact = row
+
+        call_report_data: dict[str, Any] = {
+            "id": str(cr.id),
+            "created_at": cr.created_at,
+            "updated_at": cr.updated_at,
+            "tags": cr.tags,
+            "sales_agent": cr.sales_agent,
+            "assigned_date": cr.assigned_date,
+            "last_activity_date": cr.last_activity_date,
+            "remark": cr.remark,
+            "status": cr.status,
+            "source": cr.source,
+            "call_duration": cr.call_duration,
+            "next_follow_up": cr.next_follow_up,
+            # Contact details
+            "name": contact.name if contact else None,
+            "contact": contact.contact_no if contact else None,
+            "email": contact.email if contact else None,
+            "city": contact.city if contact else None,
+            "state": contact.state if contact else None,
+            "project_name": contact.project_name if contact else None,
+            "property_type": contact.property_type if contact else None,
+            "budget_range": contact.budget_range if contact else None,
+        }
+
         return success_response(data=call_report_data, message="Call report retrieved successfully")
 
     except Exception as e:
+        logger.error(f"Failed to get call report: {str(e)}")
         return internal_server_error(f"Failed to get call report: {str(e)}")
 
 
@@ -82,10 +138,12 @@ async def update_call_report(db: AsyncSession, call_report_id: UUID, data: CallR
         call_report = await db.get(CallReport, call_report_id)
         
         if call_report is None:
+            logger.warning("Call report not found for update", call_report_id=str(call_report_id))
             return error_response(404, "Call report not found")
 
         # Update only provided fields
         update_data = data.model_dump(exclude_unset=True)
+        logger.debug("Call report update payload", call_report_id=str(call_report_id), update_data=update_data)
         
         for field, value in update_data.items():
             setattr(call_report, field, value)
@@ -94,9 +152,11 @@ async def update_call_report(db: AsyncSession, call_report_id: UUID, data: CallR
         await db.refresh(call_report)
 
         call_report_data = CallReportRead.model_validate(call_report).model_dump()
+        logger.info("Call report updated", call_report_id=str(call_report_id))
         return success_response(data=call_report_data, message="Call report updated successfully")
 
     except Exception as e:
+        logger.error(f"Failed to update call report: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to update call report: {str(e)}")
 
@@ -107,13 +167,16 @@ async def delete_call_report(db: AsyncSession, call_report_id: UUID):
         call_report = await db.get(CallReport, call_report_id)
         
         if call_report is None:
+            logger.warning("Call report not found for delete", call_report_id=str(call_report_id))
             return error_response(404, "Call report not found")
 
         await db.delete(call_report)
         await db.commit()
 
+        logger.info("Call report deleted", call_report_id=str(call_report_id))
         return success_response(data={"id": str(call_report_id)}, message="Call report deleted successfully")
 
     except Exception as e:
+        logger.error(f"Failed to delete call report: {str(e)}")
         await db.rollback()
         return internal_server_error(f"Failed to delete call report: {str(e)}")

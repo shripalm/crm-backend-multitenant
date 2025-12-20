@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from typing import Optional
 
 from app.db.session import get_db
 from app.schemas.callreport_schema import CallReportCreate, CallReportRead, CallReportUpdate
@@ -12,7 +13,7 @@ from app.services.callreport_service import (
     update_call_report,
     delete_call_report,
 )
-
+from app.utils.pagination import PaginationParams
 router = APIRouter()
 
 
@@ -22,13 +23,25 @@ async def add_call_report(payload: CallReportCreate, db: AsyncSession = Depends(
     return await create_call_report(db, payload)
 
 
-@router.get("/", response_model=StandardResponse[list[CallReportRead]])
-async def get_call_reports(db: AsyncSession = Depends(get_db)):
-    """Get all call reports"""
-    return await list_call_reports(db)
+@router.get("/", response_model=StandardResponse)
+async def get_call_reports(
+    page: int = Query(1, description="Page number (starts from 1)"),
+    size: int = Query(20, description="Items per page (max 100)"),
+    sort_by: Optional[str] = Query(None, description="Field to sort by"),
+    sort_direction: Optional[str] = Query("desc", description="Sort direction (asc or desc)"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all call reports with pagination"""
+    pagination_params = PaginationParams(
+        page=page,
+        size=size,
+        sort_by=sort_by,
+        sort_direction=sort_direction.lower() if sort_direction else "desc",
+    )
+    return await list_call_reports(db, pagination_params)
 
 
-@router.get("/{call_report_id}", response_model=StandardResponse[CallReportRead])
+@router.get("/{call_report_id}", response_model=StandardResponse[dict])
 async def get_call_report_by_id(call_report_id: UUID, db: AsyncSession = Depends(get_db)):
     """Get a single call report by ID"""
     return await get_call_report(db, call_report_id)
