@@ -18,10 +18,10 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Insert Roles
 INSERT INTO roles (id, name, description, created_at) VALUES
-('10000000-0000-0000-0000-000000000001', 'Admin', 'System Administrator with full access', NOW()),
-('10000000-0000-0000-0000-000000000002', 'Manager', 'Team Manager with moderate access', NOW()),
-('10000000-0000-0000-0000-000000000003', 'Sales Agent', 'Sales team member with basic access', NOW()),
-('10000000-0000-0000-0000-000000000004', 'Marketing', 'Marketing team member', NOW())
+('10000000-0000-0000-0000-000000000001', 'presales', 'Presales team member with basic access', NOW()),
+('10000000-0000-0000-0000-000000000002', 'sales', 'Sales team member with basic access', NOW()),
+('10000000-0000-0000-0000-000000000003', 'sitevisit', 'Site visit team member with basic access', NOW()),
+('10000000-0000-0000-0000-000000000004', 'sales', 'Sales team member with basic access', NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert Role-Permission Mappings
@@ -56,11 +56,11 @@ ON CONFLICT (role_id, permission_id) DO NOTHING;
 
 -- Insert Users
 INSERT INTO users (id, email, full_name, password_hash, team_name, active, created_at, updated_at) VALUES
-('20000000-0000-0000-0000-000000000001', 'john.admin@example.com', 'John Admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'presales', true, NOW(), NOW()),
-('20000000-0000-0000-0000-000000000002', 'sarah.manager@example.com', 'Sarah Manager', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'sales ', true, NOW(), NOW()),
+('20000000-0000-0000-0000-000000000001', 'john.presales@example.com', 'John Presales', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'presales', true, NOW(), NOW()),
+('20000000-0000-0000-0000-000000000002', 'sarah.sales@example.com', 'Sarah Sales', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'sales ', true, NOW(), NOW()),
 ('20000000-0000-0000-0000-000000000003', 'mike.sales@example.com', 'Mike Sales', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'presales', true, NOW(), NOW()),
 ('20000000-0000-0000-0000-000000000004', 'lisa.sales@example.com', 'Lisa Sales', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'sales', true, NOW(), NOW()),
-('20000000-0000-0000-0000-000000000005', 'david.marketing@example.com', 'David Marketing', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'sitevisit', true, NOW(), NOW())
+('20000000-0000-0000-0000-000000000005', 'david.sitevisit@example.com', 'David sitevisit', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYqVr/UZj.C', 'sitevisit', true, NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Insert User-Role Mappings
