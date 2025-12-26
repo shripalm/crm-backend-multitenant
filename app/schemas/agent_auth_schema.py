@@ -125,3 +125,50 @@ class AgentResetPasswordRequest(BaseModel):
                 "confirm_password": "NewPassword123",
             }
         }
+
+
+# ============== Agent Management Schemas ==============
+
+
+class AgentResponse(BaseModel):
+    """Agent response schema for GET operations."""
+    id: str = Field(..., description="Agent UUID")
+    email: EmailStr
+    username: str
+    name: str
+    contact_no: str
+    logo_url: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    experience: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AgentUpdateRequest(BaseModel):
+    """Agent update request schema."""
+    email: Optional[EmailStr] = Field(None, description="Agent email")
+    username: Optional[str] = Field(None, min_length=3, max_length=255, description="Agent username")
+    name: Optional[str] = Field(None, max_length=255, description="Agent full name")
+    contact_no: Optional[str] = Field(None, max_length=50, description="Agent contact number")
+    logo_url: Optional[str] = Field(None, max_length=512, description="Logo URL")
+    city: Optional[str] = Field(None, max_length=100, description="City")
+    state: Optional[str] = Field(None, max_length=100, description="State")
+    experience: Optional[str] = Field(None, max_length=100, description="Experience info")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "updated@example.com",
+                "username": "updated_username",
+                "name": "Updated Name",
+                "contact_no": "+1234567890",
+                "logo_url": "https://example.com/logo.png",
+                "city": "New York",
+                "state": "NY",
+                "experience": "5 years"
+            }
+        }

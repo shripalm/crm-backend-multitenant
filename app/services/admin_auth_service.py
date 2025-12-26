@@ -18,6 +18,8 @@ from app.schemas.admin_auth_schema import (
     AdminRegisterRequest,
     AdminRegisterResponse,
     AdminResetPasswordRequest,
+    AdminUpdateRequest,
+    AdminResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     VerifyOTPRequest,
@@ -463,3 +465,186 @@ async def reset_admin_password(
         logger.error("Admin password reset error: %s", str(e), exc_info=True)
         await db.rollback()
         return internal_server_error(f"Admin password reset failed: {str(e)}")
+
+
+# ============== Admin Management Functions ==============
+
+
+async def get_admins_list(db: AsyncSession) -> Optional[dict]:
+    """Get list of all admins."""
+    try:
+        stmt = select(Admin).order_by(Admin.created_at.desc())
+        result = await db.execute(stmt)
+        admins = result.scalars().all()
+
+        admin_responses = []
+        for admin in admins:
+            admin_response = AdminResponse(
+                id=admin.id,
+                email=admin.email,
+                username=admin.username,
+                created_at=admin.created_at,
+                updated_at=admin.updated_at,
+            )
+            admin_responses.append(admin_response)
+
+        return success_response(
+            data=admin_responses,
+            message="Admins retrieved successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Get admins list error: %s", str(e), exc_info=True)
+        return internal_server_error(f"Failed to retrieve admins: {str(e)}")
+
+
+async def get_admin_by_id(db: AsyncSession, admin_id: int) -> Optional[dict]:
+    """Get a specific admin by ID."""
+    try:
+        stmt = select(Admin).where(Admin.id == admin_id)
+        result = await db.execute(stmt)
+        admin = result.scalar_one_or_none()
+
+        if not admin:
+            return error_response(
+                status_code=404,
+                message="Admin not found",
+            )
+
+        admin_response = AdminResponse(
+            id=admin.id,
+            email=admin.email,
+            username=admin.username,
+            created_at=admin.created_at,
+            updated_at=admin.updated_at,
+        )
+
+        return success_response(
+            data=admin_response.model_dump(),
+            message="Admin retrieved successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Get admin by ID error: %s", str(e), exc_info=True)
+        return internal_server_error(f"Failed to retrieve admin: {str(e)}")
+
+
+async def update_admin(
+    db: AsyncSession, admin_id: int, update_data: AdminUpdateRequest
+) -> Optional[dict]:
+    """Update admin information."""
+    try:
+        # Check if admin exists
+        stmt = select(Admin).where(Admin.id == admin_id)
+        result = await db.execute(stmt)
+        admin = result.scalar_one_or_none()
+
+        if not admin:
+            return error_response(
+                status_code=404,
+                message="Admin not found",
+            )
+
+        # Check for email and username uniqueness if they are being updated
+        if update_data.email is not None or update_data.username is not None:
+            conditions = []
+            if update_data.email is not None:
+                conditions.append(func.lower(Admin.email) == func.lower(update_data.email))
+            if update_data.username is not None:
+                conditions.append(func.lower(Admin.username) == func.lower(update_data.username))
+            
+            if conditions:
+                stmt = select(Admin).where(
+                    or_(*conditions),
+                    Admin.id != admin_id  # Exclude current admin from check
+                )
+                result = await db.execute(stmt)
+                existing = result.scalar_one_or_none()
+
+                if existing:
+                    if update_data.email is not None and existing.email.lower() == update_data.email.lower():
+                        return error_response(
+                            status_code=400,
+                            message="Email already exists",
+                        )
+                    if update_data.username is not None and existing.username.lower() == update_data.username.lower():
+                        return error_response(
+                            status_code=400,
+                            message="Username already exists",
+                        )
+
+        # Update only provided fields
+        update_values = {}
+        if update_data.email is not None:
+            update_values["email"] = update_data.email
+        if update_data.username is not None:
+            update_values["username"] = update_data.username
+
+        if not update_values:
+            return error_response(
+                status_code=400,
+                message="No fields to update",
+            )
+
+        # Apply updates
+        stmt = (
+            update(Admin)
+            .where(Admin.id == admin_id)
+            .values(**update_values)
+            .returning(Admin)
+        )
+        result = await db.execute(stmt)
+        await db.commit()
+        updated_admin = result.scalar_one()
+
+        admin_response = AdminResponse(
+            id=updated_admin.id,
+            email=updated_admin.email,
+            username=updated_admin.username,
+            created_at=updated_admin.created_at,
+            updated_at=updated_admin.updated_at,
+        )
+
+        logger.info("Admin updated successfully: %s", admin_id)
+
+        return success_response(
+            data=admin_response.model_dump(),
+            message="Admin updated successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Update admin error: %s", str(e), exc_info=True)
+        await db.rollback()
+        return internal_server_error(f"Failed to update admin: {str(e)}")
+
+
+async def delete_admin(db: AsyncSession, admin_id: int) -> Optional[dict]:
+    """Delete an admin by ID."""
+    try:
+        # Check if admin exists
+        stmt = select(Admin).where(Admin.id == admin_id)
+        result = await db.execute(stmt)
+        admin = result.scalar_one_or_none()
+
+        if not admin:
+            return error_response(
+                status_code=404,
+                message="Admin not found",
+            )
+
+        # Delete admin
+        stmt = delete(Admin).where(Admin.id == admin_id)
+        await db.execute(stmt)
+        await db.commit()
+
+        logger.info("Admin deleted successfully: %s", admin_id)
+
+        return success_response(
+            data={"admin_id": admin_id},
+            message="Admin deleted successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Delete admin error: %s", str(e), exc_info=True)
+        await db.rollback()
+        return internal_server_error(f"Failed to delete admin: {str(e)}")

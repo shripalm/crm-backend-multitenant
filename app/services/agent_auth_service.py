@@ -18,6 +18,8 @@ from app.schemas.agent_auth_schema import (
     AgentRegisterRequest,
     AgentRegisterResponse,
     AgentResetPasswordRequest,
+    AgentUpdateRequest,
+    AgentResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     VerifyOTPRequest,
@@ -452,3 +454,216 @@ async def reset_agent_password(
         logger.error("Agent password reset error: %s", str(e), exc_info=True)
         await db.rollback()
         return internal_server_error(f"Agent password reset failed: {str(e)}")
+
+
+# ============== Agent Management Functions ==============
+
+
+async def get_agents_list(db: AsyncSession) -> Optional[dict]:
+    """Get list of all agents."""
+    try:
+        stmt = select(Agent).order_by(Agent.created_at.desc())
+        result = await db.execute(stmt)
+        agents = result.scalars().all()
+
+        agent_responses = []
+        for agent in agents:
+            agent_response = AgentResponse(
+                id=str(agent.id),
+                email=agent.email,
+                username=agent.username,
+                name=agent.name,
+                contact_no=agent.contact_no,
+                logo_url=agent.logo_url,
+                city=agent.city,
+                state=agent.state,
+                experience=agent.experience,
+                created_at=agent.created_at,
+                updated_at=agent.updated_at,
+            )
+            agent_responses.append(agent_response)
+
+        return success_response(
+            data=agent_responses,
+            message="Agents retrieved successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Get agents list error: %s", str(e), exc_info=True)
+        return internal_server_error(f"Failed to retrieve agents: {str(e)}")
+
+
+async def get_agent_by_id(db: AsyncSession, agent_id: str) -> Optional[dict]:
+    """Get a specific agent by ID."""
+    try:
+        stmt = select(Agent).where(Agent.id == agent_id)
+        result = await db.execute(stmt)
+        agent = result.scalar_one_or_none()
+
+        if not agent:
+            return error_response(
+                status_code=404,
+                message="Agent not found",
+            )
+
+        agent_response = AgentResponse(
+            id=str(agent.id),
+            email=agent.email,
+            username=agent.username,
+            name=agent.name,
+            contact_no=agent.contact_no,
+            logo_url=agent.logo_url,
+            city=agent.city,
+            state=agent.state,
+            experience=agent.experience,
+            created_at=agent.created_at,
+            updated_at=agent.updated_at,
+        )
+
+        return success_response(
+            data=agent_response.model_dump(),
+            message="Agent retrieved successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Get agent by ID error: %s", str(e), exc_info=True)
+        return internal_server_error(f"Failed to retrieve agent: {str(e)}")
+
+
+async def update_agent(
+    db: AsyncSession, agent_id: str, update_data: AgentUpdateRequest
+) -> Optional[dict]:
+    """Update agent information."""
+    try:
+        # Check if agent exists
+        stmt = select(Agent).where(Agent.id == agent_id)
+        result = await db.execute(stmt)
+        agent = result.scalar_one_or_none()
+
+        if not agent:
+            return error_response(
+                status_code=404,
+                message="Agent not found",
+            )
+
+        # Check for email and username uniqueness if they are being updated
+        if update_data.email is not None or update_data.username is not None:
+            conditions = []
+            if update_data.email is not None:
+                conditions.append(func.lower(Agent.email) == func.lower(update_data.email))
+            if update_data.username is not None:
+                conditions.append(func.lower(Agent.username) == func.lower(update_data.username))
+            
+            if conditions:
+                stmt = select(Agent).where(
+                    or_(*conditions),
+                    Agent.id != agent_id  # Exclude current agent from check
+                )
+                result = await db.execute(stmt)
+                existing = result.scalar_one_or_none()
+
+                if existing:
+                    if update_data.email is not None and existing.email.lower() == update_data.email.lower():
+                        return error_response(
+                            status_code=400,
+                            message="Email already exists",
+                        )
+                    if update_data.username is not None and existing.username.lower() == update_data.username.lower():
+                        return error_response(
+                            status_code=400,
+                            message="Username already exists",
+                        )
+
+        # Update only provided fields
+        update_values = {}
+        if update_data.email is not None:
+            update_values["email"] = update_data.email
+        if update_data.username is not None:
+            update_values["username"] = update_data.username
+        if update_data.name is not None:
+            update_values["name"] = update_data.name
+        if update_data.contact_no is not None:
+            update_values["contact_no"] = update_data.contact_no
+        if update_data.logo_url is not None:
+            update_values["logo_url"] = update_data.logo_url
+        if update_data.city is not None:
+            update_values["city"] = update_data.city
+        if update_data.state is not None:
+            update_values["state"] = update_data.state
+        if update_data.experience is not None:
+            update_values["experience"] = update_data.experience
+
+        if not update_values:
+            return error_response(
+                status_code=400,
+                message="No fields to update",
+            )
+
+        # Apply updates
+        stmt = (
+            update(Agent)
+            .where(Agent.id == agent_id)
+            .values(**update_values)
+            .returning(Agent)
+        )
+        result = await db.execute(stmt)
+        await db.commit()
+        updated_agent = result.scalar_one()
+
+        agent_response = AgentResponse(
+            id=str(updated_agent.id),
+            email=updated_agent.email,
+            username=updated_agent.username,
+            name=updated_agent.name,
+            contact_no=updated_agent.contact_no,
+            logo_url=updated_agent.logo_url,
+            city=updated_agent.city,
+            state=updated_agent.state,
+            experience=updated_agent.experience,
+            created_at=updated_agent.created_at,
+            updated_at=updated_agent.updated_at,
+        )
+
+        logger.info("Agent updated successfully: %s", agent_id)
+
+        return success_response(
+            data=agent_response.model_dump(),
+            message="Agent updated successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Update agent error: %s", str(e), exc_info=True)
+        await db.rollback()
+        return internal_server_error(f"Failed to update agent: {str(e)}")
+
+
+async def delete_agent(db: AsyncSession, agent_id: str) -> Optional[dict]:
+    """Delete an agent by ID."""
+    try:
+        # Check if agent exists
+        stmt = select(Agent).where(Agent.id == agent_id)
+        result = await db.execute(stmt)
+        agent = result.scalar_one_or_none()
+
+        if not agent:
+            return error_response(
+                status_code=404,
+                message="Agent not found",
+            )
+
+        # Delete agent
+        stmt = delete(Agent).where(Agent.id == agent_id)
+        await db.execute(stmt)
+        await db.commit()
+
+        logger.info("Agent deleted successfully: %s", agent_id)
+
+        return success_response(
+            data={"agent_id": agent_id},
+            message="Agent deleted successfully",
+        )
+
+    except Exception as e:  # pragma: no cover
+        logger.error("Delete agent error: %s", str(e), exc_info=True)
+        await db.rollback()
+        return internal_server_error(f"Failed to delete agent: {str(e)}")
