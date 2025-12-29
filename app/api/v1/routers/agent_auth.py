@@ -9,6 +9,8 @@ from app.schemas.agent_auth_schema import (
     AgentRegisterRequest,
     AgentRegisterResponse,
     AgentResetPasswordRequest,
+    AgentUpdateRequest,
+    AgentResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     VerifyOTPRequest,
@@ -17,9 +19,13 @@ from app.schemas.agent_auth_schema import (
 from app.schemas.response import StandardResponse
 from app.services.agent_auth_service import (
     authenticate_agent,
+    delete_agent,
+    get_agent_by_id,
+    get_agents_list,
     register_agent,
     request_password_reset_otp,
     reset_agent_password,
+    update_agent,
     verify_password_reset_otp,
 )
 
@@ -124,3 +130,75 @@ async def agent_reset_password(
     **Security:** Reset token is single-use and expires after 10 minutes.
     """
     return await reset_agent_password(db, reset_data)
+
+
+# ============== Agent Management Endpoints ==============
+
+
+@router.get(
+    "/",
+    response_model=StandardResponse[list[AgentResponse]],
+    summary="Get all agents",
+    
+)
+async def get_agents(
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """Get a list of all agents ordered by creation date (newest first)."""
+    return await get_agents_list(db)
+
+
+@router.get(
+    "/{agent_id}",
+    response_model=StandardResponse[AgentResponse],
+    summary="Get agent by ID",
+                      
+)
+async def get_agent(
+    agent_id: str,
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """Get a specific agent by their UUID."""
+    return await get_agent_by_id(db, agent_id)
+
+
+@router.put(
+    "/{agent_id}",
+    response_model=StandardResponse[AgentResponse],
+    summary="Update agent",
+    
+)
+async def update_agent_endpoint(
+    agent_id: str,
+    update_data: AgentUpdateRequest,
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """
+    Update agent information.
+    
+    - Only provided fields will be updated (partial update)
+    - All registration fields can be updated including email and username
+    - Email and username uniqueness will be validated
+    - Returns the updated agent information
+    
+    **Note:** Password cannot be updated through this endpoint. Use password reset flow instead.
+    """
+    return await update_agent(db, agent_id, update_data)
+
+
+@router.delete(
+    "/{agent_id}",
+    response_model=StandardResponse,
+    summary="Delete agent",
+    
+)
+async def delete_agent_endpoint(
+    agent_id: str,
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """
+    Delete an agent by their UUID.
+    
+    **Warning:** This action is irreversible and will permanently delete the agent.
+    """
+    return await delete_agent(db, agent_id)

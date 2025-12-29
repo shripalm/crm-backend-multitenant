@@ -49,21 +49,21 @@ class Settings(BaseSettings):
     LOG_LVL: str
 
     # Email Settings (Gmail SMTP) - UNUTILISED
-    SMTP_HOST: str
-    SMTP_PORT: int
-    SMTP_USER: str
-    SMTP_PASSWORD: str
-    SMTP_FROM_EMAIL: str
-    SMTP_FROM_NAME: str
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "rbrickkstechnologyemployees@gmail.com"
+    SMTP_PASSWORD: str = "ggxk bzcx kise oaes"
+    SMTP_FROM_EMAIL: str = "rbrickkstechnologyemployees@gmail.com"
+    SMTP_FROM_NAME: str = "CRM System"
 
     # Email Settings (SendGrid) - ACTIVE
-    SENDGRID_API_KEY: str
-    SENDGRID_FROM_EMAIL: str
-    SENDGRID_FROM_NAME: str
+    SENDGRID_API_KEY: str = "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"
+    SENDGRID_FROM_EMAIL: str = "rbrickkstechpvtltd@gmail.com"
+    SENDGRID_FROM_NAME: str = "CRM System"
 
     # OTP Settings
-    OTP_EXPIRE_MINUTES: int
-    OTP_LENGTH: int
+    OTP_EXPIRE_MINUTES: int = 10
+    OTP_LENGTH: int = 4
        
     # pydantic v2 style configuration
     # Use the module-level PROJECT_ROOT so Pydantic doesn't treat this as
