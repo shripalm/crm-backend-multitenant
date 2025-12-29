@@ -187,3 +187,32 @@ class VerifyOTPResponse(BaseModel):
     message: str = Field(..., description="Success message")
 
 
+# ============== Admin Management Schemas ==============
+
+
+class AdminResponse(BaseModel):
+    """Admin response schema for GET operations."""
+    id: int = Field(..., description="Admin ID")
+    email: EmailStr
+    username: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class AdminUpdateRequest(BaseModel):
+    """Admin update request schema."""
+    email: Optional[EmailStr] = Field(None, description="Admin email address")
+    username: Optional[str] = Field(None, min_length=3, max_length=50, description="Admin username")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "updated@example.com",
+                "username": "updated_username"
+            }
+        }
+
+
