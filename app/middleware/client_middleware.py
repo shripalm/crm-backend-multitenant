@@ -80,18 +80,6 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client = request.headers.get("client")
-        token = request.headers.get("token")
-        if not token:
-            error_response = ErrorResponse(
-                status="400",
-                message="Missing required header: token",
-                data={}
-            )
-            response = JSONResponse(error_response.model_dump(), status_code=400)
-            # Add CORS headers to error responses
-            self._add_cors_headers(response, request)
-            return response
-        
         if not client:
             error_response = ErrorResponse(
                 status="400",

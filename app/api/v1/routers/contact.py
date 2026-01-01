@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import Optional
 
-from app.db.session import get_db
+from app.api.deps import get_db
 from app.schemas.contact_schema import ContactCreate, ContactRead, ContactUpdate
 from app.schemas.response import StandardResponse
 from app.services.contact_service import (

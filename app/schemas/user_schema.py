@@ -1,8 +1,9 @@
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
+import re
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.schemas.role_schema import RoleRead
 
@@ -18,7 +19,19 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: str
+    password: str = Field(min_length=6)
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        if len(v) < 6:
+            raise ValueError('Password must be at least 6 characters long')
+        
+        # Check for at least one special character
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError('Password must contain at least one special character')
+        
+        return v
 
 
 class UserUpdate(BaseModel):

@@ -17,6 +17,7 @@ class Booking(Base):
             nullable=True
             )
 
+
     booking_date = Column(DateTime(timezone=True), nullable=True)
     payment_status = Column(String(50), nullable=True)
     payment_paid = Column(String(50), nullable=True)

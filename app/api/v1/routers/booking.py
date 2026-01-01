@@ -5,7 +5,7 @@ from typing import Optional
 
 from app.db.session import get_db
 from app.schemas.response import StandardResponse
-from app.schemas.booking_schema import BookingCreate, BookingRead
+from app.schemas.booking_schema import BookingCreate, BookingRead, BookingUpdate
 from app.services.bookings_service import (
     create_booking,
     list_bookings,
@@ -49,6 +49,6 @@ async def get_booking_by_id(booking_id: UUID, db: AsyncSession = Depends(get_db)
 # Update an existing booking
 @router.put("/{booking_id}", response_model=StandardResponse[BookingRead])
 async def update_booking_by_id(
-    booking_id: UUID, payload: BookingCreate, db: AsyncSession = Depends(get_db)):
+    booking_id: UUID, payload: BookingUpdate, db: AsyncSession = Depends(get_db)):
     """Update an existing booking"""
-    return await update_booking(db, booking_id, payload)    
+    return await update_booking(db, booking_id, payload)

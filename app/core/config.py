@@ -43,28 +43,38 @@ class Settings(BaseSettings):
 
     # Security Settings (all from .env)
     SECRET_KEY: str
+    ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     # Logging Settings (from .env)
     LOG_LVL: str
 
     # Email Settings (Gmail SMTP) - UNUTILISED
-    SMTP_HOST: str
-    SMTP_PORT: int
-    SMTP_USER: str
-    SMTP_PASSWORD: str
-    SMTP_FROM_EMAIL: str
-    SMTP_FROM_NAME: str
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "rbrickkstechnologyemployees@gmail.com"
+    SMTP_PASSWORD: str = "ggxk bzcx kise oaes"
+    SMTP_FROM_EMAIL: str = "rbrickkstechnologyemployees@gmail.com"
+    SMTP_FROM_NAME: str = "CRM System"
 
     # Email Settings (SendGrid) - ACTIVE
-    SENDGRID_API_KEY: str
-    SENDGRID_FROM_EMAIL: str
-    SENDGRID_FROM_NAME: str
+    SENDGRID_API_KEY: str = "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"
+    SENDGRID_FROM_EMAIL: str = "rbrickkstechpvtltd@gmail.com"
+    SENDGRID_FROM_NAME: str = "CRM System"
 
     # OTP Settings
-    OTP_EXPIRE_MINUTES: int
-    OTP_LENGTH: int
-       
+    OTP_EXPIRE_MINUTES: int = 10
+    OTP_LENGTH: int = 4
+    
+    # Paytm Payment Gateway Settings
+    PAYTM_MERCHANT_ID: str
+    PAYTM_MERCHANT_KEY: str
+    PAYTM_WEBSITE: str = "WEBSTAGING"
+    PAYTM_INDUSTRY_TYPE: str = "Retail"
+    PAYTM_CHANNEL_ID: str = "WEB"
+    PAYTM_STAGING: bool = True
+    BASE_URL: str = "http://localhost:8000"  # Used for callback URLs
+
     # pydantic v2 style configuration
     # Use the module-level PROJECT_ROOT so Pydantic doesn't treat this as
     # a model field (avoids non-annotated attribute errors).

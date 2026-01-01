@@ -36,22 +36,24 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     errors = {}
     
     for error in exc.errors():
-        field = error["loc"][-1]  # Get the field name
-        error_type = error["type"].split(".")[-1]  # Get the error type
+        # Join all parts of the location for better context (e.g., "body.amount")
+        loc_path = " -> ".join(str(l) for l in error["loc"])
+        field_str = str(error["loc"][-1])
+        error_type = error["type"].split(".")[-1]
         
         # Generate user-friendly error messages
         if error_type == "missing":
-            msg = f"{field.replace('_', ' ').title()} is required"
+            msg = f"{field_str.replace('_', ' ').title()} is required"
         elif error_type == "string_type":
-            msg = f"{field.replace('_', ' ').title()} must be a string"
+            msg = f"{field_str.replace('_', ' ').title()} must be a string"
         elif error_type in ["int_parsing", "float_parsing"]:
-            msg = f"{field.replace('_', ' ').title()} must be a number"
+            msg = f"{field_str.replace('_', ' ').title()} must be a number"
         elif error_type == "enum":
-            msg = f"Invalid value for {field.replace('_', ' ')}"
+            msg = f"Invalid value for {field_str.replace('_', ' ')}"
         else:
-            msg = f"Validation error for {field.replace('_', ' ')}"
+            msg = f"Validation error at {loc_path}: {error.get('msg', 'Invalid format')}"
             
-        errors[str(field)] = msg
+        errors[loc_path] = msg
     
     error_response = ErrorResponse(
         status="422",
