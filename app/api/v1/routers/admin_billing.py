@@ -8,6 +8,7 @@ from app.db.admin_session import get_admin_db
 from app.schemas.billing_schema import BillingRecordRead
 from app.services.billing_service import generate_billing_for_all_agents_month
 from app.models.billing_record import BillingRecord
+from app.models.agent import Agent
 from app.utils.logging import logger
 
 router = APIRouter()
@@ -54,8 +55,31 @@ async def generate_billing(
             billing_month=month
         )
         
-        # Calculate total amount for the response
-        total_amount = sum(record.total_amount for record in records)
+        # Add agent names to the response
+        records_with_agent_names = []
+        total_amount = 0
+        
+        for record in records:
+            # Get the agent's name
+            agent = await admin_db.get(Agent, record.agent_id)
+            
+            # Create a dictionary with all required fields
+            record_data = {
+                'id': record.id,
+                'agent_id': record.agent_id,
+                'agent_name': agent.name if agent else "Unknown",
+                'billing_month': record.billing_month,
+                'active_users': record.active_users,
+                'price_per_user': float(record.price_per_user),
+                'total_amount': float(record.total_amount),
+                'status': record.status,
+                'created_at': record.created_at
+            }
+            
+            # Validate with the schema
+            record_dict = BillingRecordRead(**record_data).model_dump(mode='json')
+            records_with_agent_names.append(record_dict)
+            total_amount += record.total_amount
         
         # Add custom headers with summary information
         headers = {
@@ -70,7 +94,7 @@ async def generate_billing(
         )
         
         return JSONResponse(
-            content=[BillingRecordRead.model_validate(record).model_dump(mode='json') for record in records],
+            content=records_with_agent_names,
             headers=headers
         )
         
@@ -131,8 +155,31 @@ async def regenerate_billing(
             billing_month=month
         )
         
-        # Calculate total amount for the response
-        total_amount = sum(record.total_amount for record in records)
+        # Add agent names to the response
+        records_with_agent_names = []
+        total_amount = 0
+        
+        for record in records:
+            # Get the agent's name
+            agent = await admin_db.get(Agent, record.agent_id)
+            
+            # Create a dictionary with all required fields
+            record_data = {
+                'id': record.id,
+                'agent_id': record.agent_id,
+                'agent_name': agent.name if agent else "Unknown",
+                'billing_month': record.billing_month,
+                'active_users': record.active_users,
+                'price_per_user': float(record.price_per_user),
+                'total_amount': float(record.total_amount),
+                'status': record.status,
+                'created_at': record.created_at
+            }
+            
+            # Validate with the schema
+            record_dict = BillingRecordRead(**record_data).model_dump(mode='json')
+            records_with_agent_names.append(record_dict)
+            total_amount += record.total_amount
         
         # Add custom headers with summary information
         headers = {
@@ -148,7 +195,7 @@ async def regenerate_billing(
         )
         
         return JSONResponse(
-            content=[BillingRecordRead.model_validate(record).model_dump(mode='json') for record in records],
+            content=records_with_agent_names,
             headers=headers
         )
         
