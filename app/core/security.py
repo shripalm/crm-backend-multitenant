@@ -78,7 +78,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     if "user_id" in to_encode and isinstance(to_encode["user_id"], UUID):
         to_encode["user_id"] = str(to_encode["user_id"])
     
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm="HS256")
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
@@ -92,7 +92,7 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         Decoded payload if valid, None if invalid or expired
     """
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
         logger.warning("Token has expired")

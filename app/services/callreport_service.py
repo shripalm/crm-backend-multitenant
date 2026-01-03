@@ -63,27 +63,80 @@ async def create_call_report(db: AsyncSession, data: CallReportCreate):
 
 async def list_call_reports(
     db: AsyncSession,
-    pagination_params: PaginationParams,
+    pagination_params: PaginationParams = PaginationParams(),
 ):
-    """List all call reports and return serialized response."""
+    """List all call reports with pagination and related contact data."""
     try:
+        # First, get paginated call report IDs
+        report_query = select(CallReport.id).order_by(CallReport.created_at.desc())
         paginator = get_paginator(db)
-        query = select(CallReport).order_by(CallReport.created_at.desc())
-        result = await paginator.paginate(
-            query=query,
+        paginated_result = await paginator.paginate(
+            query=report_query,
             pagination_params=pagination_params,
             model_class=CallReport
         )
-        call_reports_data = [CallReportRead.model_validate(
-            cr).model_dump() for cr in result.data]
-        paginated_response = PaginatedResponse[CallReportRead](
-            data=call_reports_data,
-            meta=result.meta,
+        
+        # Get the paginated report IDs
+        report_ids = [str(report) for report in paginated_result.data]
+        
+        if not report_ids:
+            return success_response(
+                data={"data": [], "meta": paginated_result.meta},
+                message="No call reports found"
+            )
+        
+        # Now fetch the full report data with contact joins for just these IDs
+        stmt = (
+            select(CallReport, Contact)
+            .join(Contact, CallReport.contact_id == Contact.id, isouter=True)
+            .where(CallReport.id.in_(report_ids))
+            .order_by(CallReport.created_at.desc())
+        )
+        
+        result = await db.execute(stmt)
+        rows = result.unique().all()
+        
+        # Create a mapping of report ID to its data
+        report_data_map = {
+            str(cr.id): {
+                "id": str(cr.id),
+                "created_at": cr.created_at,
+                "updated_at": cr.updated_at,
+                "tags": cr.tags,
+                "sales_agent": cr.sales_agent,
+                "assigned_date": cr.assigned_date,
+                "last_activity_date": cr.last_activity_date,
+                "remark": cr.remark,
+                "status": cr.status,
+                "source": cr.source,
+                "call_duration": cr.call_duration,
+                "next_follow_up": cr.next_follow_up,
+                # Contact details
+                "name": contact.name if contact else None,
+                "contact": contact.contact_no if contact else None,
+                "email": contact.email if contact else None,
+                "city": contact.city if contact else None,
+                "state": contact.state if contact else None,
+                "project_name": contact.project_name if contact else None,
+                "property_type": contact.property_type if contact else None,
+                "budget_range": contact.budget_range if contact else None,
+            }
+            for cr, contact in rows
+        }
+        
+        # Maintain the original order from pagination
+        data = [report_data_map[report_id] for report_id in report_ids if report_id in report_data_map]
+        
+        return success_response(
+            data={
+                "data": data,
+                "meta": paginated_result.meta
+            },
             message="Call reports retrieved successfully"
         )
-        return success_response(data=paginated_response.model_dump(), message="Call reports retrieved successfully")
+        
     except Exception as e:
-        logger.error(f"Failed to list call reports: {str(e)}")
+        logger.error(f"Failed to list call reports: {str(e)}", exc_info=True)
         return internal_server_error(f"Failed to list call reports: {str(e)}")
 
 

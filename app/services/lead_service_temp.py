@@ -67,7 +67,7 @@ async def list_leads(
         )
         
         # Get the paginated lead IDs
-        lead_ids = [str(lead) for lead in paginated_result.data]
+        lead_ids = [str(lead.id) for lead in paginated_result.data]
         
         if not lead_ids:
             return success_response(
@@ -132,16 +132,16 @@ async def get_lead(db: AsyncSession, lead_id: UUID):
             .join(User, Lead.employee_id == User.id, isouter=True)
             .where(Lead.id == lead_id)
         )
-
+        
         result = await db.execute(stmt)
         row = result.unique().first()
-
-        if row is None:
+        
+        if not row:
             return error_response(404, "Lead not found")
-
+        
         lead, contact, user = row
-
-        lead_data: dict[str, Any] = {
+        
+        lead_data = {
             "id": str(lead.id),
             "created_at": lead.created_at,
             "assigned_at": lead.assigned_at,
@@ -157,8 +157,9 @@ async def get_lead(db: AsyncSession, lead_id: UUID):
             "budget_range": contact.budget_range if contact else None,
             "employee_name": user.full_name if user else None,
         }
-
+        
         return success_response(data=lead_data, message="Lead retrieved successfully")
+        
     except Exception as e:
         return internal_server_error(f"Failed to get lead: {str(e)}")
 
@@ -166,19 +167,20 @@ async def get_lead(db: AsyncSession, lead_id: UUID):
 async def update_lead(db: AsyncSession, lead_id: UUID, data: LeadUpdate):
     try:
         lead = await db.get(Lead, lead_id)
-        if lead is None:
+        if not lead:
             return error_response(404, "Lead not found")
-
+        
+        # Update only provided fields
         update_data = data.model_dump(exclude_unset=True)
-
         for field, value in update_data.items():
             setattr(lead, field, value)
-
+        
         await db.commit()
         await db.refresh(lead)
-
+        
         lead_data = LeadRead.model_validate(lead).model_dump()
         return success_response(data=lead_data, message="Lead updated successfully")
+        
     except Exception as e:
         await db.rollback()
         return internal_server_error(f"Failed to update lead: {str(e)}")
@@ -187,13 +189,14 @@ async def update_lead(db: AsyncSession, lead_id: UUID, data: LeadUpdate):
 async def delete_lead(db: AsyncSession, lead_id: UUID):
     try:
         lead = await db.get(Lead, lead_id)
-        if lead is None:
+        if not lead:
             return error_response(404, "Lead not found")
-
-        await db.delete(Lead)
+        
+        await db.delete(lead)
         await db.commit()
-
-        return success_response(data={"id": str(lead_id)}, message="Lead deleted successfully")
+        
+        return success_response(message="Lead deleted successfully")
+        
     except Exception as e:
         await db.rollback()
         return internal_server_error(f"Failed to delete lead: {str(e)}")

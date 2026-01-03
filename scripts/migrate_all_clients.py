@@ -111,7 +111,7 @@ def run_alembic_upgrade(database_url: str, config_file: str = 'alembic.ini') -> 
         # and ensure the working directory is the project root so alembic.ini
         # (or the provided config_file) can be located.
         result = subprocess.run(
-            [sys.executable, '-m', 'alembic', '-c', config_file, 'upgrade', 'head'],
+            [sys.executable, '-m', 'alembic', '-c', config_file, '--raiseerr', 'upgrade', 'head'],
             env=env,
             capture_output=True,
             text=True,
@@ -119,12 +119,12 @@ def run_alembic_upgrade(database_url: str, config_file: str = 'alembic.ini') -> 
         )
         
         if result.returncode == 0:
-            print(f"✅ Alembic upgrade completed successfully")
+            print(f"✅ Alembic upgrade for {database_url} completed successfully")
             if result.stdout:
                 print(f"Output: {result.stdout}")
             return True
         else:
-            print(f"❌ Alembic upgrade failed")
+            print(f"❌ Alembic upgrade for {database_url} failed")
             print(f"Error: {result.stderr}")
             return False
             
@@ -240,8 +240,9 @@ async def main():
                         # Verify tables after successful migration
                         await verify_database_tables(str(client_url))
                     else:
-                        print(f"❌ Admin database migration failed")
+                        print(f"❌ CRITICAL: Admin database migration failed. Stopping all migrations.")
                         print(f"Error: {result.stderr}")
+                        sys.exit(1) # FAIL FAST
             except Exception as e:
                 print(f"❌ Error processing admin database: {str(e)}")
             continue

@@ -24,56 +24,72 @@ async def list_all_tasks_paginated(
     db: AsyncSession, 
     pagination_params: PaginationParams = PaginationParams(),
 ):
-    """List all tasks in the system with pagination."""
+    """List all tasks in the system with pagination and related user/contact data."""
     try:
+        # First, get the paginated task IDs
+        task_query = select(Task.id).order_by(Task.created_at.desc())
         paginator = get_paginator(db)
-        query = select(Task)
-        result = await paginator.paginate(
-            query=query,
+        paginated_result = await paginator.paginate(
+            query=task_query,
             pagination_params=pagination_params,
             model_class=Task
         )
-        tasks_data = [TaskRead.model_validate(task) for task in result.data]
-
-        paginated_response = PaginatedResponse[TaskRead](
-            data=tasks_data,   # ← list[TaskRead]
-            meta=result.meta,
-            message="All tasks retrieved"
+        
+        # Get the paginated task IDs
+        task_ids = [str(task) for task in paginated_result.data]
+        
+        if not task_ids:
+            return success_response(
+                data={"data": [], "meta": paginated_result.meta},
+                message="No tasks found"
+            )
+        
+        # Now fetch the full task data with joins for just these IDs
+        stmt = (
+            select(Task, User, Contact)
+            .join(User, Task.assigned_to == User.id, isouter=True)
+            .join(Contact, Task.lead_id == Contact.id, isouter=True)
+            .where(Task.id.in_(task_ids))
+            .order_by(Task.created_at.desc())
         )
-
+        
+        result = await db.execute(stmt)
+        rows = result.unique().all()
+        
+        # Create a mapping of task ID to its data
+        task_data_map = {
+            str(task.id): {
+                "id": str(task.id),
+                "created_at": task.created_at,
+                "updated_at": task.updated_at,
+                "status": task.status,
+                "assigned_to": user.full_name if user else None,
+                "assigned_to_team": task.assigned_to_team,
+                "assigned_by": str(task.assigned_by) if task.assigned_by else None,
+                "remarks": task.remarks,
+                "callback_time": task.callback_time,
+                "lead_name": contact.name if contact else None,
+                "contact_no": contact.contact_no if contact else None,
+                "project_name": contact.project_name if contact else None,
+                "property_type": contact.property_type if contact else None,
+                "budget_range": contact.budget_range if contact else None,
+            }
+            for task, user, contact in rows
+        }
+        
+        # Maintain the original order from pagination
+        data = [task_data_map[task_id] for task_id in task_ids if task_id in task_data_map]
+        
         return success_response(
-            data=paginated_response.model_dump(),
-            message="All tasks retrieved"
+            data={
+                "data": data,
+                "meta": paginated_result.meta
+            },
+            message="Tasks retrieved successfully"
         )
-        # stmt = (
-        #     select(Task, User, Contact)
-        #     .join(User, Task.assigned_to == User.id, isouter=True)
-        #     .join(Contact, Task.lead_id == Contact.id, isouter=True)
-        #     .order_by(Task.created_at.desc())
-        # )
-
-        # result = await db.execute(stmt)
-        # rows = result.unique().all()
-
-        # data: list[dict[str, Any]] = []
-        # for task, user, contact in rows:
-        #     item = {
-        #         "id": str(task.id),
-        #         "created_at": task.created_at,
-        #         "updated_at": task.updated_at,
-        #         "status": task.status,
-        #         # Replace foreign keys with related names
-        #         "assigned_to": user.full_name if user else None,
-        #         "assigned_to_team": task.assigned_to_team,
-        #         "assigned_by": str(task.assigned_by) if task.assigned_by else None,
-        #         "remarks": task.remarks,
-        #         "callback_time": task.callback_time,
-        #         "lead_id": contact.name if contact else None,
-        #         "contact_no": contact.contact_no if contact else None,
-        #     }
-        #     data.append(item)
-        # return success_response(data=data, message="All tasks retrieved")
+        
     except Exception as e:
+        logger.error(f"Failed to list all tasks: {str(e)}", exc_info=True)
         return internal_server_error(f"Failed to list all tasks: {str(e)}")
 
 

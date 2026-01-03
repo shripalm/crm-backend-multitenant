@@ -43,6 +43,7 @@ class Settings(BaseSettings):
 
     # Security Settings (all from .env)
     SECRET_KEY: str
+    ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int
 
     # Logging Settings (from .env)
@@ -64,7 +65,15 @@ class Settings(BaseSettings):
     # OTP Settings
     OTP_EXPIRE_MINUTES: int = 10
     OTP_LENGTH: int = 4
-       
+      
+    PAYTM_MERCHANT_ID: str
+    PAYTM_MERCHANT_KEY: str
+    PAYTM_WEBSITE: str = "WEBSTAGING"
+    PAYTM_INDUSTRY_TYPE: str = "Retail"
+    PAYTM_CHANNEL_ID: str = "WEB"
+    PAYTM_STAGING: bool = True
+    BASE_URL: str = "http://localhost:8000"  # Used for callback URLs
+      
     # pydantic v2 style configuration
     # Use the module-level PROJECT_ROOT so Pydantic doesn't treat this as
     # a model field (avoids non-annotated attribute errors).
