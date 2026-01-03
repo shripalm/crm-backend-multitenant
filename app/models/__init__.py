@@ -14,7 +14,10 @@ from .agent import Agent
 from .agent_otp import AgentOTP
 from .admin_otp import AdminOTP
 from .user_otp import UserOTP
-
+from .subscription_plan import SubscriptionPlan
+from .agent_subscription import AgentSubscription
+from .user_activity_log import UserActivityLog
+from .billing_record import BillingRecord
 
 __all__ = [
     "Base",
@@ -29,10 +32,14 @@ __all__ = [
     "CallReport",
     "Task",
     "SiteVisit",
-    "due_customer",
+    "DueCustomer",
     "PaymentReceived",
     "Agent",
     "AgentOTP",
     "AdminOTP",
     "UserOTP",
+    "SubscriptionPlan",
+    "AgentSubscription",
+    "UserActivityLog",
+    "BillingRecord",
 ]

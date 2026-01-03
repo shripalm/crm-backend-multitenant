@@ -24,6 +24,8 @@ from app.schemas.auth_schema import (
 from app.services.email_service import send_otp_email, send_password_reset_success_email
 from app.utils.logging import logger
 from app.utils.response import error_response, internal_server_error, success_response
+from app.db.admin_session import get_admin_db
+from app.models.user_activity_log import UserActivityLog
 
 
 def generate_otp(length: int = 4) -> str:
@@ -95,6 +97,23 @@ async def authenticate_user(
         # Update last login time
         user.last_login = func.now()
         await db.commit()
+
+        # Track login in admin DB for subscription billing
+        # A user is considered billable for the month if they logged in at least once.
+        if getattr(user, "agent_id", None) is not None:
+            try:
+                async for admin_db in get_admin_db():
+                    admin_db.add(
+                        UserActivityLog(
+                            agent_id=user.agent_id,
+                            user_id=user.id,
+                            login_time=datetime.now(timezone.utc),
+                        )
+                    )
+                    await admin_db.commit()
+            except Exception as e:
+                # Don't fail login if tracking fails
+                logger.error("Failed to log user activity: %s", str(e), exc_info=True)
 
         token_data = {
             "user_id": user.id,

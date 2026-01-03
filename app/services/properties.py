@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.models.projects import Property
+from app.models.projects import Property, Project
 from app.schemas.property_schema import PropertyCreate, PropertyRead
 from app.utils.response import success_response, internal_server_error, error_response
 from app.utils.logging import logger
@@ -46,6 +46,38 @@ async def list_properties(db: AsyncSession, project_id: str):
     except Exception as e:
         logger.error(f"Failed to list properties: {str(e)}")
         return internal_server_error(f"Failed to list properties: {str(e)}")
+
+
+async def get_all_properties(db: AsyncSession, skip: int = 0, limit: int = 100):
+    """
+    Get all properties across all projects with pagination
+    """
+    try:
+        # Query to get properties with project details
+        stmt = (
+            select(Property, Project.name.label("project_name"))
+            .join(Project, Project.id == Property.project_id)
+            .where(Property.is_deleted == False)
+            .offset(skip)
+            .limit(limit)
+        )
+        
+        result = await db.execute(stmt)
+        properties = result.all()
+        
+        # Format the response
+        data = []
+        for prop, project_name in properties:
+            prop_data = PropertyRead.from_orm(prop).dict()
+            prop_data["project_name"] = project_name
+            data.append(prop_data)
+
+        logger.debug(f"Fetched {len(data)} properties")
+        return success_response(data=data, message="Properties retrieved successfully")
+
+    except Exception as e:
+        logger.error(f"Failed to fetch all properties: {str(e)}")
+        return internal_server_error(f"Failed to fetch properties: {str(e)}")
 
 
 async def soft_delete_property(db: AsyncSession, property_id: str):
