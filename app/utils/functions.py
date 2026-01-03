@@ -45,6 +45,7 @@ async def convert_to_json(file: UploadFile) -> Dict[str, Any]:
         )
     
     try:
+        print(f"File {file.filename} processed successfully.")  # Debug log
         # Create a temporary file to store the upload
         with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
             # Write uploaded file content to temporary file
@@ -57,6 +58,12 @@ async def convert_to_json(file: UploadFile) -> Dict[str, Any]:
                 df = pd.read_excel(temp_file.name)
             else:
                 df = pd.read_csv(temp_file.name)
+
+            if df.empty:
+                raise ValueError("Uploaded file is empty or invalid")
+
+            if df.columns.size == 0:
+                raise ValueError("Uploaded file has no columns")
             
             # Convert DataFrame to JSON compatible dictionary
             json_data = df.to_dict(orient='records')
@@ -66,8 +73,10 @@ async def convert_to_json(file: UploadFile) -> Dict[str, Any]:
                 "message": "Success",
                 "data": json_data
             }
-            
+
+         
     except Exception as e:
+        print(f"Error processing file: {str(e)}")  # Debug log
         raise HTTPException(
             status_code=500,
             detail=f"Error processing file: {str(e)}"
