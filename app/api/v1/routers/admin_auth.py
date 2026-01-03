@@ -9,6 +9,8 @@ from app.schemas.admin_auth_schema import (
     AdminRegisterRequest,
     AdminRegisterResponse,
     AdminResetPasswordRequest,
+    AdminUpdateRequest,
+    AdminResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     VerifyOTPRequest,
@@ -17,9 +19,13 @@ from app.schemas.admin_auth_schema import (
 from app.schemas.response import StandardResponse
 from app.services.admin_auth_service import (
     authenticate_admin,
+    delete_admin,
+    get_admin_by_id,
+    get_admins_list,
     register_admin,
     request_password_reset_otp,
     reset_admin_password,
+    update_admin,
     verify_password_reset_otp,
 )
 
@@ -114,3 +120,74 @@ async def admin_reset_password(
     - Password must be at least 6 characters
     """
     return await reset_admin_password(db, reset_data)
+
+
+# ============== Admin Management Endpoints ==============
+
+
+@router.get(
+    "/",
+    response_model=StandardResponse[list[AdminResponse]],
+    summary="Get all admins",
+
+)
+async def get_admins(
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """Get a list of all admins ordered by creation date (newest first)."""
+    return await get_admins_list(db)
+
+
+@router.get(
+    "/{admin_id}",
+    response_model=StandardResponse[AdminResponse],
+    summary="Get admin by ID",
+    
+)
+async def get_admin(
+    admin_id: int,
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """Get a specific admin by their ID."""
+    return await get_admin_by_id(db, admin_id)
+
+
+@router.put(
+    "/{admin_id}",
+    response_model=StandardResponse[AdminResponse],
+    summary="Update admin",
+    
+)
+async def update_admin_endpoint(
+    admin_id: int,
+    update_data: AdminUpdateRequest,
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """
+    Update admin information.
+    
+    - Only provided fields will be updated (partial update)
+    - Email and username uniqueness will be validated
+    - Returns the updated admin information
+    
+    **Note:** Password cannot be updated through this endpoint. Use password reset flow instead.
+    """
+    return await update_admin(db, admin_id, update_data)
+
+
+@router.delete(
+    "/{admin_id}",
+    response_model=StandardResponse,
+    summary="Delete admin",
+    
+)
+async def delete_admin_endpoint(
+    admin_id: int,
+    db: AsyncSession = Depends(get_admin_db),
+):
+    """
+    Delete an admin by their ID.
+    
+    **Warning:** This action is irreversible and will permanently delete the admin.
+    """
+    return await delete_admin(db, admin_id)

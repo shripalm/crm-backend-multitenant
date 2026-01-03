@@ -12,6 +12,7 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     team_name: str | None = None
+    agent_id: UUID | None = None
     active: bool = True
     contact: str | None = None
     gender: str | None = None

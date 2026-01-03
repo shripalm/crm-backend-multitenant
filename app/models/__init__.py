@@ -20,6 +20,10 @@ from .payment import Payment
 from .refund import Refund
 from .subscription import UserSubscription
 
+from .subscription_plan import SubscriptionPlan
+from .agent_subscription import AgentSubscription
+from .user_activity_log import UserActivityLog
+from .billing_record import BillingRecord
 
 __all__ = [
     "Base",
@@ -36,6 +40,7 @@ __all__ = [
     "Task",
     "SiteVisit",
     "due_customers",
+    "DueCustomer",
     "PaymentReceived",
     "Agent",
     "AgentOTP",
@@ -45,4 +50,8 @@ __all__ = [
     "Payment",
     "Refund",
     "UserSubscription",
+    "SubscriptionPlan",
+    "AgentSubscription",
+    "UserActivityLog",
+    "BillingRecord",
 ]

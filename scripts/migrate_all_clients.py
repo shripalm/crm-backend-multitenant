@@ -205,7 +205,7 @@ async def main():
             continue
             
         # Special handling for admin database
-        if client == 'admin':
+        if client == 'admin' or client == 'test_admin':
             print(f"\n🔄 Processing admin database...")
             try:
                 from sqlalchemy.engine import make_url

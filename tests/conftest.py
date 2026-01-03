@@ -1,20 +1,60 @@
-"""Pytest configuration helpers.
+# tests/conftest.py
+import pytest
+from httpx import AsyncClient
+from asgi_lifespan import LifespanManager
+from sqlalchemy.ext.asyncio import AsyncSession
+from tests.db.test_session import AsyncSessionLocal
+from app.main import app  # your FastAPI app
+from sqlalchemy import text
+from httpx._transports.asgi import ASGITransport
+from asgi_lifespan import LifespanManager
 
-Ensure the project root is on sys.path so tests can import the application package
-when pytest is invoked from the project workspace.
-"""
-from __future__ import annotations
 
-import sys
-from pathlib import Path
-import os
+# -------------------------
+# DB session fixture
+# -------------------------
+@pytest.fixture
+async def db_session():
+    async with AsyncSessionLocal() as session:
+        yield session
 
+# -------------------------
+# Async FastAPI test client
+# -------------------------
+# Async client fixture
+@pytest.fixture
+async def client(db_session):
+    """
+    Async test client for FastAPI using httpx + ASGITransport
+    """
+    transport = ASGITransport(app=app)  
+    async with LifespanManager(app):
+        async with AsyncClient(
+            transport=transport,
+            base_url="http://testserver"
+        ) as ac:
+            yield ac
 
-def _add_project_root_to_path() -> None:
-    root = Path(__file__).resolve().parent.parent
-    p = str(root)
-    if p not in sys.path:
-        # Insert at front so local packages take precedence over installed ones
-        sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# -------------------------
+# Override FastAPI dependencies
+# -------------------------
+from app.db.session import get_db  # adjust to your project
 
-_add_project_root_to_path()
+@pytest.fixture(autouse=True)
+def override_get_db(db_session: AsyncSession):
+    async def _get_db_override():
+        yield db_session
+
+    app.dependency_overrides[get_db] = _get_db_override
+    yield
+    app.dependency_overrides.clear()
+
+# -------------------------------
+# Fixtures for file content
+@pytest.fixture
+def sample_csv_content():
+    return b"name,age\nAlice,30\nBob,25"
+
+@pytest.fixture
+def invalid_file_content():
+    return b"\x00\x01\x02\x03\x04\x05"
