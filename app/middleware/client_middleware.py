@@ -91,6 +91,21 @@ class ClientHeaderMiddleware(BaseHTTPMiddleware):
             self._add_cors_headers(response, request)
             return response
 
+        token = request.headers.get("token")
+        if not token:
+            error_response = ErrorResponse(
+                status="400",
+                message="Missing required header: token",
+                data={}
+            )
+            response = JSONResponse(
+                error_response.model_dump(),
+                status_code=400,
+            )
+            # Add CORS headers to error responses
+            self._add_cors_headers(response, request)
+            return response
+
         client_map = settings.DB_KEYS
 
         if client not in [*client_map, "admin"]:
