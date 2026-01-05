@@ -1,7 +1,7 @@
 """create billing_records table in admin database
 
-Revision ID: 2345678901c1
-Revises: 2345678901c0
+Revision ID: 2345678901c2
+Revises: 2345678901c1
 Create Date: 2025-12-26 12:10:00.000000
 
 """
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "2345678901c1"
-down_revision: Union[str, None] = "2345678901c0"
+revision: str = "2345678901c2"
+down_revision: Union[str, None] = "2345678901c1"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
