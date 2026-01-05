@@ -1,12 +1,15 @@
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel, Field
+
 
 class BookingBase(BaseModel):
     booking_date: Optional[datetime] = Field(None, description= "Date and time of the booking")
     payment_status: Optional[str] = Field(None, max_length=50, description="Status of the payment")
     payment_paid: Optional[str] = Field(None, max_length=50, description="Amount paid")
+    due_date: Optional[datetime] = Field(None, description="Payment due date")
     payment_mode: Optional[str] = Field(None, max_length=50, description="Mode of payment")
     last_follow_up: Optional[datetime] = Field(None, description="Date and time of the last follow-up")
     stage: Optional[str] = Field(None, max_length=50, description="Current stage of the booking process")
@@ -23,6 +26,7 @@ class BookingUpdate(BaseModel):
     booking_date: Optional[datetime] = None
     payment_status: Optional[str] = Field(None, max_length=50)
     payment_paid: Optional[str] = Field(None, max_length=50)
+    due_date: Optional[datetime] = None
     payment_mode: Optional[str] = Field(None, max_length=50)
     last_follow_up: Optional[datetime] = None
     stage: Optional[str] = Field(None, max_length=50)
@@ -35,3 +39,5 @@ class BookingRead(BookingBase):
 
     class Config:
         from_attributes = True
+
+

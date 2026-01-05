@@ -21,6 +21,7 @@ from app.utils.response import (
 )
 
 from app.services.auto_assign_service import assign_task_for_lead_site_visit
+from app.utils.logging import logger
 
 
 async def create_lead(db: AsyncSession, data: LeadCreate):
@@ -54,23 +55,72 @@ async def list_leads(
     db: AsyncSession,
     pagination_params: PaginationParams,
 ):
-    """List all leads and return serialized response."""
+    """List all leads with pagination and related data."""
     try:
+        # First, get paginated lead IDs
+        lead_query = select(Lead.id).order_by(Lead.created_at.desc())
         paginator = get_paginator(db)
-        query = select(Lead).order_by(Lead.created_at.desc())
-        result = await paginator.paginate(
-            query=query,
+        paginated_result = await paginator.paginate(
+            query=lead_query,
             pagination_params=pagination_params,
             model_class=Lead
         )
-        leads_data = [LeadRead.model_validate(lead).model_dump() for lead in result.data]
-        paginated_response = PaginatedResponse[LeadRead](
-            data=leads_data,
-            meta=result.meta,
+        
+        # Get the paginated lead IDs
+        lead_ids = [str(lead) for lead in paginated_result.data]
+        
+        if not lead_ids:
+            return success_response(
+                data={"data": [], "meta": paginated_result.meta},
+                message="No leads found"
+            )
+        
+        # Now fetch the full lead data with joins for just these IDs
+        stmt = (
+            select(Lead, Contact, User)
+            .join(Contact, Lead.contact_id == Contact.id, isouter=True)
+            .join(User, Lead.employee_id == User.id, isouter=True)
+            .where(Lead.id.in_(lead_ids))
+            .order_by(Lead.created_at.desc())
+        )
+        
+        result = await db.execute(stmt)
+        rows = result.unique().all()
+        
+        # Create a mapping of lead ID to its data
+        lead_data_map = {
+            str(lead.id): {
+                "id": str(lead.id),
+                "created_at": lead.created_at,
+                "assigned_at": lead.assigned_at,
+                "remark": lead.remark,
+                "site_visit": lead.site_visit,
+                "last_visited_date": lead.last_visited_date,
+                "call_duration": lead.call_duration,
+                "contact_name": contact.name if contact else None,
+                "contact": contact.contact_no if contact else None,
+                "source": contact.source if contact else None,
+                "project_name": contact.project_name if contact else None,
+                "property_type": contact.property_type if contact else None,
+                "budget_range": contact.budget_range if contact else None,
+                "employee_name": user.full_name if user else None,
+            }
+            for lead, contact, user in rows
+        }
+        
+        # Maintain the original order from pagination
+        data = [lead_data_map[lead_id] for lead_id in lead_ids if lead_id in lead_data_map]
+        
+        return success_response(
+            data={
+                "data": data,
+                "meta": paginated_result.meta
+            },
             message="Leads retrieved successfully"
         )
-        return success_response(data=paginated_response.model_dump(), message="Leads retrieved successfully")
+        
     except Exception as e:
+        logger.error(f"Failed to list leads: {str(e)}", exc_info=True)
         return internal_server_error(f"Failed to list leads: {str(e)}")
 
 

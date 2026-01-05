@@ -14,7 +14,12 @@ from app.utils.logging import logger
 
 from app.middleware.client_middleware import ClientHeaderMiddleware
 from app.middleware.logging_middleware import LoggingMiddleware
-from app.api.v1.routers import user, role, permission, contact, callreport, task, auth, admin_auth, agent_auth, lead, visibility, sitevisit, booking, reports, companyinfo
+
+from app.api.v1.routers import (
+    user, role, permission, contact, callreport, task, auth, 
+    admin_auth, agent_auth, lead, visibility, sitevisit, 
+    booking, reports, companyinfo, admin_billing, payments
+)
 
 
 from app.utils.exception_handlers import (
@@ -67,6 +72,7 @@ app.include_router(dev_settings.router, prefix="/api/settings", tags=["settings"
 # Authentication
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(admin_auth.router, prefix="/api/v1/admin/auth", tags=["Admin Authentication"])
+app.include_router(admin_billing.router, prefix="/api/v1/admin/billing", tags=["Admin Billing"])
 app.include_router(agent_auth.router, prefix="/api/v1/agents/auth", tags=["Agent Authentication"])
 
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects and Properties"]) 
@@ -85,6 +91,7 @@ app.include_router(lead.router, prefix="/api/v1/leads", tags=["Leads"])
 app.include_router(visibility.router, prefix="/api/v1/visibility", tags=["User Visibility"])
 app.include_router(companyinfo.router, prefix="/api/v1/company-info", tags=["Company Info"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
+app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event
