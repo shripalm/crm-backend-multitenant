@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from datetime import date
 from typing import Optional
 
 from app.db.session import get_db
@@ -9,6 +10,7 @@ from app.schemas.response import StandardResponse
 from app.services.callreport_service import (
     create_call_report,
     list_call_reports,
+    get_call_report_stats,
     get_call_report,  
     update_call_report,
     delete_call_report,
@@ -39,6 +41,17 @@ async def get_call_reports(
         sort_direction=sort_direction.lower() if sort_direction else "desc",
     )
     return await list_call_reports(db, pagination_params)
+
+
+@router.get("/stats", response_model=StandardResponse)
+async def get_call_report_statistics(
+    date_from: Optional[date] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[date] = Query(None, description="End date (YYYY-MM-DD)"),
+    employee_id: Optional[UUID] = Query(None, description="Filter by employee/user id"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get call count stats grouped by employee (kis user ne kitne calls kiye)."""
+    return await get_call_report_stats(db, date_from=date_from, date_to=date_to, employee_id=employee_id)
 
 
 @router.get("/{call_report_id}", response_model=StandardResponse[dict])

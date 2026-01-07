@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, insert
@@ -116,3 +117,61 @@ async def assign_role_to_user(db: AsyncSession, user_id: Any, role_id: Any):
     except Exception as e:
         await db.rollback()
         return internal_server_error(f"Failed to assign role: {str(e)}")
+
+
+async def update_user(db: AsyncSession, user_id: UUID, data: Any):
+    """Update user details."""
+    try:
+        # Get user with roles and permissions loaded
+        stmt = select(User).where(User.id == user_id).options(
+            selectinload(User.roles).selectinload(Role.permissions)
+        )
+        result = await db.execute(stmt)
+        user = result.scalars().first()
+        
+        if not user:
+            return error_response(404, "User not found")
+            
+        # Update fields
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(user, field, value)
+            
+        await db.commit()
+        await db.refresh(user)
+        
+        user_data = UserRead.model_validate(user).model_dump()
+        return success_response(data=user_data, message="User updated")
+        
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to update user: {str(e)}")
+        return internal_server_error(f"Failed to update user: {str(e)}")
+
+
+async def delete_user(db: AsyncSession, user_id: UUID):
+    """Delete a user by ID."""
+    try:
+        # Get user with roles and permissions loaded
+        stmt = select(User).where(User.id == user_id).options(
+            selectinload(User.roles)
+        )
+        result = await db.execute(stmt)
+        user = result.scalars().first()
+        
+        if not user:
+            return error_response(404, "User not found")
+            
+        # Delete user (cascade will handle user_roles entries)
+        await db.delete(user)
+        await db.commit()
+        
+        return success_response(
+            data={"id": str(user_id)},
+            message="User deleted successfully"
+        )
+        
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Failed to delete user: {str(e)}")
+        return internal_server_error(f"Failed to delete user: {str(e)}")
