@@ -4,13 +4,15 @@ from uuid import UUID
 from app.utils.pagination import T
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, func
 from sqlalchemy.orm import selectinload
 from app.utils.logging import logger
 
 from app.models.callreport import CallReport
 from app.models.contact import Contact
+from app.models.users import User
 from app.schemas.callreport_schema import CallReportRead, CallReportCreate, CallReportUpdate
+from app.schemas.callreport_stats_schema import CallReportStatsData
 from app.utils.response import (
     success_response,
     error_response,
@@ -23,6 +25,97 @@ from app.utils.pagination import (
 )
 
 from app.services.auto_assign_service import assign_task_for_call_report_sales
+
+
+async def get_call_report_stats(
+    db: AsyncSession,
+    date_from=None,
+    date_to=None,
+    employee_id: Optional[UUID] = None,
+):
+    try:
+        filters = []
+        if employee_id:
+            filters.append(CallReport.employee_id == employee_id)
+        if date_from:
+            filters.append(func.date(CallReport.created_at) >= date_from)
+        if date_to:
+            filters.append(func.date(CallReport.created_at) <= date_to)
+
+        stmt = (
+            select(
+                CallReport.employee_id.label("employee_id"),
+                User.full_name.label("full_name"),
+                func.count(CallReport.id).label("total_calls"),
+                func.coalesce(func.avg(CallReport.call_duration), 0).label(
+                    "avg_call_duration_seconds"
+                ),
+            )
+            .select_from(CallReport)
+            .join(User, User.id == CallReport.employee_id, isouter=True)
+        )
+        if filters:
+            stmt = stmt.where(*filters)
+        stmt = stmt.group_by(CallReport.employee_id, User.full_name)
+        stmt = stmt.order_by(func.count(CallReport.id).desc())
+
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        daily_stmt = (
+            select(
+                CallReport.employee_id.label("employee_id"),
+                func.date(CallReport.created_at).label("call_date"),
+                func.count(CallReport.id).label("count"),
+            )
+            .select_from(CallReport)
+        )
+        if filters:
+            daily_stmt = daily_stmt.where(*filters)
+        daily_stmt = daily_stmt.group_by(
+            CallReport.employee_id,
+            func.date(CallReport.created_at),
+        )
+
+        daily_result = await db.execute(daily_stmt)
+        daily_rows = daily_result.all()
+
+        daily_map: dict[str, dict] = {}
+        for r in daily_rows:
+            key = str(r.employee_id) if r.employee_id else "None"
+            if key not in daily_map:
+                daily_map[key] = {}
+            daily_map[key][r.call_date] = int(r.count or 0)
+
+        users = []
+        total_calls = 0
+        for r in rows:
+            key = str(r.employee_id) if r.employee_id else "None"
+            total_calls += int(r.total_calls or 0)
+            users.append(
+                {
+                    "employee_id": r.employee_id,
+                    "full_name": r.full_name,
+                    "total_calls": int(r.total_calls or 0),
+                    "avg_call_duration_seconds": float(
+                        r.avg_call_duration_seconds or 0
+                    ),
+                    "daily_counts": daily_map.get(key, {}),
+                }
+            )
+
+        payload = CallReportStatsData(
+            total_calls=total_calls,
+            total_users=len(users),
+            date_from=date_from,
+            date_to=date_to,
+            users=users,
+        ).model_dump()
+
+        return success_response(data=payload, message="Call report stats retrieved successfully")
+    except Exception as e:
+        logger.error(f"Failed to get call report stats: {str(e)}", exc_info=True)
+        return internal_server_error(f"Failed to get call report stats: {str(e)}")
 
 
 async def create_call_report(db: AsyncSession, data: CallReportCreate):
