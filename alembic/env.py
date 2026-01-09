@@ -9,8 +9,6 @@ import asyncio
 from logging.config import fileConfig
 
 from sqlalchemy.engine import Connection
-from sqlalchemy import text
-from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
@@ -59,30 +57,6 @@ def run_migrations_offline():
 
 
 def do_run_migrations(connection: Connection):
-    # --- AUTO-RECOVERY LOGIC START ---
-    # Detect if the database is on the deleted revision 'a1b2c3d4e5af'
-    # and map it to the consolidated revision 'a1b2c3d4e5ae'.
-    try:
-        # Check current version directly using SQL
-        result = connection.execute(text("select version_num from alembic_version"))
-        current_ver = result.scalar()
-        
-        if current_ver == 'a1b2c3d4e5af':
-            print("  [RECOVERY] Detected deleted revision 'a1b2c3d4e5af'.")
-            print("  [RECOVERY] Automatically patching migration history to 'a1b2c3d4e5ae'...")
-            
-            # Update the version to the parent/consolidated revision
-            connection.execute(text("update alembic_version set version_num = 'a1b2c3d4e5ae'"))
-            connection.commit()
-            print("  [RECOVERY] Success. Resuming standard migrations.")
-            
-    except ProgrammingError:
-        # Table might not exist yet (init), ignore
-        pass
-    except Exception as e:
-        print(f"  [RECOVERY WARNING] Could not check/patch migration version: {e}")
-    # --- AUTO-RECOVERY LOGIC END ---
-
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
