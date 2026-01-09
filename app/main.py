@@ -18,7 +18,8 @@ from app.middleware.logging_middleware import LoggingMiddleware
 from app.api.v1.routers import (
     user, role, permission, contact, callreport, task, auth, 
     admin_auth, agent_auth, lead, visibility, sitevisit, 
-    booking, reports, companyinfo, admin_billing, payments
+    booking, reports, companyinfo, admin_billing, payments,
+    incentives, core_team
 )
 
 
@@ -92,6 +93,8 @@ app.include_router(visibility.router, prefix="/api/v1/visibility", tags=["User V
 app.include_router(companyinfo.router, prefix="/api/v1/company-info", tags=["Company Info"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
+app.include_router(incentives.router, prefix="/api/v1/incentives", tags=["Incentives"])
+app.include_router(core_team.router, prefix="/api/v1/core-team", tags=["Core Team"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event

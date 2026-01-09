@@ -14,25 +14,55 @@ from app.utils.pagination import (
 )
 
 
-async def create_project(db: AsyncSession, project_in: ProjectCreate):
-    """Create a new Project record and return standardized response."""
+from app.schemas.project_creation_payload import ProjectWithIncentiveCreate
+
+async def create_project(db: AsyncSession, project_in: ProjectWithIncentiveCreate):
+    """
+    Create a new Project record with incentive handling.
+    Uses ProjectWithIncentiveCreate to keep project and incentive data separate.
+    """
     try:
-        payload = project_in.dict(exclude_none=True)
+        # Import here to avoid circular imports
+        from app.services.incentive_service import create_project_incentive_config, copy_default_to_project
+        
+        # Extract project data and incentive options
+        project_data = project_in.project_data
+        add_incentives = project_in.add_incentives
+        incentive_config = project_in.incentive_config
+        
+        # Create project using the base project data
+        payload = project_data.dict(exclude_none=True)
         logger.info("Creating project", payload=payload)
         logger.debug("Project payload", payload=payload)
+        
         project = Project(**payload)
         db.add(project)
         await db.commit()
         await db.refresh(project)
-
-        logger.info("Project created", project_id=str(project.id))
-        return created_response(data=ProjectRead.from_orm(project).dict(), message="Project created successfully")
-    except Exception as e:
-        # Attempt rollback if possible
+        
+        # Handle incentive configuration independently
         try:
-            await db.rollback()
-        except Exception:
-            pass
+            if add_incentives and incentive_config:
+                # Option 1: Add custom incentives
+                logger.info("Creating custom incentive config for project", project_id=str(project.id))
+                await create_project_incentive_config(db, project.id, incentive_config)
+            else:
+                # Option 2: Skip incentives - Copy default configuration
+                logger.info("Copying default incentive config to project", project_id=str(project.id))
+                await copy_default_to_project(db, project.id)
+            
+        except Exception as incentive_error:
+            # If incentive creation fails, log the error but the project exists
+            logger.error(f"Failed to create incentive config for project {project.id}: {str(incentive_error)}")
+        
+        logger.info("Project created successfully", project_id=str(project.id))
+        return created_response(
+            data=ProjectRead.from_orm(project).dict(), 
+            message="Project created successfully with incentive configuration"
+        )
+        
+    except Exception as e:
+        await db.rollback()
         logger.error(f"Failed to create project: {str(e)}")
         return internal_server_error(f"Failed to create project: {str(e)}")
 
