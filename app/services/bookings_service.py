@@ -118,7 +118,10 @@ async def create_booking(db: AsyncSession, data: BookingCreate):
             site_visit_id=data.site_visit_id,
             payment_status=data.payment_status,
             payment_paid=data.payment_paid,
-            payment_mode=data.payment_mode
+            payment_mode=data.payment_mode,
+            core_team_id=data.core_team_id,
+            project_id=data.project_id,
+            property_id=data.property_id,
         )
 
         db.add(booking)
