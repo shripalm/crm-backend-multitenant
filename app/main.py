@@ -21,6 +21,8 @@ from app.api.v1.routers import (
     booking, reports, companyinfo, admin_billing, payments,
     incentives, core_team
 )
+from app.api.v1.routers import user, role, permission, contact, callreport, task, auth, admin_auth, agent_auth, lead, visibility, sitevisit, booking, agent_tickets, admin_tickets, ticket_history, tickets
+
 
 
 from app.utils.exception_handlers import (
@@ -95,6 +97,10 @@ app.include_router(reports.router, prefix="/api/v1/reports", tags=["Reports"])
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["Payments"])
 app.include_router(incentives.router, prefix="/api/v1/incentives", tags=["Incentives"])
 app.include_router(core_team.router, prefix="/api/v1/core-team", tags=["Core Team"])
+app.include_router(agent_tickets.router, prefix="/api/v1/agents/tickets", tags=["Agent Tickets"])
+app.include_router(admin_tickets.router, prefix="/api/v1/admin/tickets", tags=["Admin Tickets"])
+app.include_router(ticket_history.router, prefix="/api/v1/tickets", tags=["Ticket History"])
+app.include_router(tickets.router, prefix="/api/v1/tickets", tags=["Tickets"])
 
 from app.db.listeners import before_cursor_execute, after_cursor_execute
 from sqlalchemy import event
