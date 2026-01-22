@@ -24,6 +24,10 @@ from .subscription_plan import SubscriptionPlan
 from .agent_subscription import AgentSubscription
 from .user_activity_log import UserActivityLog
 from .billing_record import BillingRecord
+from .core_team import CoreTeam
+from .ticket import Ticket
+from .ticket_comment import TicketComment
+from .ticket_status_history import TicketStatusHistory
 
 __all__ = [
     "Base",
@@ -54,4 +58,8 @@ __all__ = [
     "AgentSubscription",
     "UserActivityLog",
     "BillingRecord",
+    "CoreTeam",
+    "Ticket",
+    "TicketComment",
+    "TicketStatusHistory",
 ]
