@@ -1,382 +1,214 @@
-# CRM Backend
+# crm-backend-multitenant
 
-A modern, multi-tenant CRM (Customer Relationship Management) backend API built with **FastAPI** and **PostgreSQL**. This project provides comprehensive features for managing users, projects, contacts, leads, bookings, payments, and more.
+## Multi-Tenant CRM Backend with FastAPI
 
-## 🚀 Features
+This repository hosts the backend for a multi-tenant Customer Relationship Management (CRM) system. Developed in Python using the FastAPI framework, it provides a robust and scalable API for managing various CRM functionalities, including user authentication, lead management, project tracking, billing, and reporting, all designed to support multiple independent tenants.
 
-- **Multi-tenant Architecture**: Support for multiple clients with isolated data
-- **Authentication & Authorization**: User, Admin, and Agent authentication with role-based access control
-- **User Management**: User profiles, roles, permissions, and OTP-based authentication
-- **CRM Core Features**:
-  - Projects and Properties management
-  - Contacts and Leads tracking
-  - Call Reports and Site Visits
-  - Task Management
-  - Booking System
-- **Billing & Payments**: 
-  - Subscription management
-  - Payment processing with Paytm integration
-  - Billing records tracking
-- **Ticket Management**: Admin and Agent ticket systems with history tracking
-- **File Uploads**: CSV/Excel file upload and processing
-- **Real-time Logging**: Structured logging with context-aware information
-- **RESTful API**: Comprehensive API endpoints for all operations
-- **Docker Support**: Ready for containerized deployment
+## Overview
 
-## 🛠 Tech Stack
+The `crm-backend-multitenant` project is a comprehensive backend solution for a CRM application. It is built with a focus on high performance, scalability, and maintainability, leveraging modern Python asynchronous capabilities. The multi-tenant architecture ensures data isolation and customizable experiences for different organizations or clients using the CRM. It includes a wide array of modules covering core CRM operations, administrative tasks, agent-specific functionalities, and robust reporting.
 
-- **Framework**: FastAPI >= 0.95.0
-- **Server**: Uvicorn
-- **DB ORM**: SQLAlchemy >= 2.0
-- **Database**: PostgreSQL (asyncpg)
-- **Migrations**: Alembic
-- **Authentication**: JWT, Passlib with bcrypt
-- **Validation**: Pydantic >= 2.0
-- **File Processing**: Pandas, OpenPyXL
-- **Payment**: Paytm integration
-- **AWS**: S3 file uploads (boto3)
-- **Email**: SendGrid integration
-- **Testing**: pytest, pytest-asyncio
+## Features
 
-## 📋 Prerequisites
+*   **Multi-Tenancy**: Designed from the ground up to support multiple independent tenants with isolated data.
+*   **Robust Authentication & Authorization**: Secure user, agent, and admin authentication using JWT, bcrypt for password hashing, and role-based access control (RBAC) with granular permissions.
+*   **Comprehensive CRM Modules**:
+    *   **Lead Management**: Create, track, and manage leads through various stages.
+    *   **Contact Management**: Store and organize customer and prospect contact information.
+    *   **Project Management**: Track projects, tasks, and associated activities.
+    *   **Booking & Site Visit Management**: Schedule and manage customer bookings and site visits.
+    *   **Task Management**: Assign, track, and manage tasks for users and agents.
+    *   **Ticket System**: Handle customer support tickets with status tracking and history.
+*   **Billing & Payments**: Integrated modules for managing billing records, invoices, subscriptions, and payment processing (including Paytm integration).
+*   **Reporting & Analytics**: Generate various reports on leads, sales, call activities, and overall CRM performance. Data processing capabilities with Pandas and OpenPyXL.
+*   **Email Notifications**: Integration with SendGrid for sending transactional emails and notifications.
+*   **File Uploads**: Support for uploading and managing files, potentially integrated with cloud storage (e.g., AWS S3 via Boto3).
+*   **Health Monitoring**: Dedicated health endpoints for system status checks.
+*   **Developer Settings**: Endpoints for database migration, version checks, and schema management.
+*   **Logging & Error Handling**: Structured logging with `structlog` and comprehensive error handling.
 
-- Python 3.12+
-- PostgreSQL 12+
-- Docker & Docker Compose (for containerized deployment)
-- pip or virtual environment manager
+## Tech Stack
 
-## ⚙️ Installation
+*   **Language**: Python
+*   **Web Framework**: FastAPI
+*   **Asynchronous Server**: Uvicorn
+*   **Database**: PostgreSQL (inferred from SQLAlchemy, asyncpg, Alembic)
+*   **ORM**: SQLAlchemy 2.0+
+*   **Database Migrations**: Alembic
+*   **Data Validation**: Pydantic 2.0+
+*   **Environment Management**: python-dotenv, pydantic-settings
+*   **Authentication**: PyJWT, Passlib (bcrypt)
+*   **HTTP Client**: httpx, requests
+*   **Testing**: pytest, pytest-asyncio
+*   **Data Processing**: pandas, openpyxl, numpy, scipy
+*   **Cloud Integration**: boto3, botocore (for AWS services like S3)
+*   **Email**: email-validator, sendgrid
+*   **Payment Gateway**: paytmchecksum, Crypto
+*   **Logging**: structlog
+*   **Debugging**: debugpy
+*   **Video Processing (Optional/Utility)**: opencv-python-headless, yt-dlp (Note: These are present in dependencies and might be used for specific media-related features not typical for a core CRM, but included for completeness.)
 
-### 1. Clone the repository
-```bash
-git clone <repository-url>
-cd backend
-```
+## Installation
 
-### 2. Create a virtual environment
-```bash
-python -m venv venv
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
+### Prerequisites
 
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
+Before you begin, ensure you have the following installed:
 
-### 4. Configure environment variables
-Create a `.env` file in the project root:
-```bash
-# Database
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/crm_db
-ADMIN_DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/admin_db
+*   Python 3.9+
+*   pip (Python package installer)
+*   Docker and Docker Compose (recommended for local development and database setup)
+*   A PostgreSQL database instance (can be run via Docker)
 
-# JWT
-SECRET_KEY=your-secret-key-here
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+### Steps
 
-# AWS
-AWS_ACCESS_KEY_ID=your-access-key
-AWS_SECRET_ACCESS_KEY=your-secret-key
-AWS_S3_BUCKET=your-bucket-name
-AWS_REGION=us-east-1
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/shripalm/crm-backend-multitenant.git
+    cd crm-backend-multitenant
+    ```
 
-# SendGrid
-SENDGRID_API_KEY=your-sendgrid-key
+2.  **Set up a virtual environment:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    ```
 
-# Stage
-STAGE_PATH=/api/v1
-PROJECT_NAME=CRM-Backend
-```
+3.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
 
-### 5. Initialize the database
-```bash
-# Run migrations
-alembic upgrade head
+4.  **Configure Environment Variables:**
+    Create a `.env` file in the root directory of the project based on the `.env.example` (if available) or the `Environment Variables` section below.
 
-# For admin database
-alembic -c admin_alembic.ini upgrade head
-```
+5.  **Database Setup (using Docker Compose for PostgreSQL):**
+    If you're using Docker Compose for your database, you can start it:
+    ```bash
+    docker-compose up -d postgres
+    ```
+    Ensure your `DATABASE_URL` in `.env` points to this instance.
 
-## 🐳 Docker Setup
+6.  **Run Database Migrations:**
+    Initialize and apply database migrations using Alembic.
+    ```bash
+    # Ensure alembic.ini is configured correctly
+    alembic upgrade head
+    ```
 
-### Using Docker Compose
-```bash
-docker-compose up --build
-```
+7.  **Start the Application:**
+    ```bash
+    uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ```
+    The API documentation (Swagger UI) will be available at `http://127.0.0.1:8000/docs`.
 
-The application will be available at `http://localhost:80`
+## Environment Variables
 
-### Manual Docker build
-```bash
-docker build -t crm-backend .
-docker run -p 80:80 --env-file .env crm-backend
-```
+The application relies on the following environment variables, typically defined in a `.env` file:
 
-## 🚀 Running the Application
+*   `DATABASE_URL`: The connection string for your PostgreSQL database (e.g., `postgresql+asyncpg://user:password@host:port/dbname`).
+*   `ENV_FILE`: Path to the environment file (often `.env` itself, or used for different environments).
+*   `SECRET_KEY`: A strong, random string used for JWT token signing.
+*   `ALGORITHM`: The algorithm used for JWT signing (e.g., `HS256`).
+*   `ACCESS_TOKEN_EXPIRE_MINUTES`: Expiration time for access tokens in minutes.
+*   `REFRESH_TOKEN_EXPIRE_DAYS`: Expiration time for refresh tokens in days.
+*   `ADMIN_EMAIL`: Default admin email for initial setup.
+*   `ADMIN_PASSWORD`: Default admin password for initial setup.
+*   `SENDGRID_API_KEY`: API key for SendGrid email service.
+*   `PAYTM_MERCHANT_KEY`: Merchant key for Paytm integration.
+*   `PAYTM_MERCHANT_ID`: Merchant ID for Paytm integration.
+*   `AWS_ACCESS_KEY_ID`: AWS access key for S3 integration.
+*   `AWS_SECRET_ACCESS_KEY`: AWS secret key for S3 integration.
+*   `AWS_REGION_NAME`: AWS region for S3.
+*   `AWS_BUCKET_NAME`: S3 bucket name for file uploads.
 
-### Development Mode
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+*(Note: This list is illustrative; refer to `app/core/config.py` or similar for the exact required variables.)*
 
-The API will be available at `http://localhost:8000`
+## API Endpoints
 
-API documentation:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+The API is structured versioned (`/api/v1`) and organized by functional areas. Full interactive documentation is available via Swagger UI at `/docs` when the application is running.
 
-### Production Mode
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 80 --workers 4
-```
+Here's a glimpse of the main endpoint categories:
 
-## 📁 Project Structure
+*   `/api/v1/health`: Basic health check endpoint.
+*   `/api/v1/auth`: User authentication (login, register, password reset).
+*   `/api/v1/admin/auth`: Admin-specific authentication.
+*   `/api/v1/agents/auth`: Agent-specific authentication.
+*   `/api/v1/leads`: Lead creation, retrieval, update, and deletion.
+*   `/api/v1/contacts`: Contact management.
+*   `/api/v1/projects`: Project creation and management.
+*   `/api/v1/bookings`: Booking scheduling and management.
+*   `/api/v1/site-visit`: Site visit scheduling and tracking.
+*   `/api/v1/tasks`: Task assignment and status updates.
+*   `/api/v1/tickets`: Customer support ticket system.
+*   `/api/v1/payments`: Payment processing and records.
+*   `/api/v1/admin/billing`: Admin-level billing management.
+*   `/api/v1/reports`: Various CRM reports and analytics.
+*   `/api/v1/permissions`: Role and permission management.
+*   `/api/v1/upload`: File upload functionality.
+*   `/api/settings/db_migrate`: Database migration endpoint (for development/admin use).
+*   `/api/settings/db_version_check`: Check current database version.
+
+## Folder Structure
+
+The project follows a modular structure to ensure clear separation of concerns:
 
 ```
 .
-├── alembic/                 # Database migrations
-│   └── versions/           # Migration files
-├── admin_alembic/          # Admin database migrations
-│   └── versions/
-├── app/                    # Main application code
-│   ├── api/               # API routes and endpoints
-│   │   └── v1/routers/   # Route handlers (auth, users, projects, etc.)
-│   ├── core/             # Core configuration
-│   ├── db/               # Database models and setup
-│   ├── models/           # SQLAlchemy models
-│   ├── repositories/     # Database access layer
-│   ├── schemas/          # Pydantic schemas for validation
-│   ├── services/         # Business logic
-│   ├── middleware/       # Custom middleware (auth, logging, client headers)
-│   ├── enums/            # Enum definitions
-│   ├── utils/            # Utility functions and helpers
-│   └── main.py          # FastAPI application entry point
-├── scripts/              # Utility scripts for maintenance
-│   ├── admin_db.sh
-│   ├── create_admin_db.py
-│   ├── migrate_all_clients.py
-│   └── ...
-├── tests/               # Test suite
-│   ├── db/             # Database tests
-│   └── services/       # Service tests
-├── documentation/      # Project documentation
-├── requirements.txt    # Python dependencies
-├── docker-compose.yml # Docker Compose configuration
-├── Dockerfile         # Docker image specification
-└── pytest.ini        # Pytest configuration
+├── app/
+│   ├── api/                  # API endpoints and routers
+│   │   ├── v1/               # Version 1 of the API
+│   │   │   └── routers/      # Individual router modules for each feature
+│   ├── core/                 # Core configurations, security, and utilities
+│   ├── db/                   # Database connection, session management, models base
+│   ├── enums/                # Enumerations for various states and types
+│   ├── middleware/           # FastAPI middleware components
+│   ├── models/               # SQLAlchemy ORM models for database tables
+│   ├── repositories/         # Data access layer
+│   ├── schemas/              # Pydantic schemas for request/response validation
+│   ├── services/             # Business logic and service layer
+│   ├── utils/                # Helper functions and utilities
+│   └── main.py               # Main FastAPI application entry point
+├── scripts/                  # Placeholder for utility scripts
+├── Dockerfile                # Docker build instructions
+├── docker-compose.yml        # Docker Compose configuration
+├── requirements.txt          # Python dependencies
+└── .env.example              # Example environment variables
 ```
 
-## 🔌 API Endpoints
+## Scripts
 
-The API is organized into several modules:
+While no specific executable scripts were detected in the `scripts/` directory, common operations include:
 
-### Authentication
-- `POST /api/v1/auth/login` - User login
-- `POST /api/v1/auth/register` - User registration
-- `POST /api/v1/admin/auth/login` - Admin login
-- `POST /api/v1/agents/auth/login` - Agent login
+*   **Database Migrations**: Handled via `alembic` commands (e.g., `alembic revision --autogenerate -m "Add new table"`, `alembic upgrade head`).
+*   **Running Tests**: `pytest` to execute unit and integration tests.
+*   **Linting/Formatting**: Tools like `black` or `isort` for code quality.
 
-### Users & Access Control
-- `GET /api/v1/users` - List users
-- `POST /api/v1/users` - Create user
-- `GET /api/v1/users/{id}` - Get user details
-- `PUT /api/v1/users/{id}` - Update user
-- `DELETE /api/v1/users/{id}` - Delete user
+## Deployment
 
-### Projects & Properties
-- `GET /api/v1/projects` - List projects
-- `POST /api/v1/projects` - Create project
-- `GET /api/v1/properties` - List properties
+The project includes a `Dockerfile` and `docker-compose.yml` for containerized deployment.
 
-### CRM Features
-- `GET /api/v1/contacts` - List contacts
-- `POST /api/v1/leads` - Create lead
-- `GET /api/v1/bookings` - List bookings
-- `POST /api/v1/call-reports` - Create call report
+1.  **Build Docker Image:**
+    ```bash
+    docker build -t crm-backend-multitenant .
+    ```
 
-### Billing & Payments
-- `GET /api/v1/admin/billing` - Billing information
-- `POST /api/v1/payments` - Process payment
+2.  **Run with Docker Compose:**
+    The `docker-compose.yml` can be used to orchestrate the application along with its database.
+    ```bash
+    docker-compose up --build -d
+    ```
+    This will build the image (if not already built) and start the application and its dependencies in detached mode.
 
-### Tickets
-- `GET /api/v1/tickets` - List tickets
-- `POST /api/v1/tickets` - Create ticket
+## Future Improvements
 
-For complete API documentation, run the application and visit `/docs` for interactive Swagger UI.
+*   **Comprehensive Testing**: Expand unit and integration test coverage.
+*   **CI/CD Pipeline**: Implement a robust CI/CD pipeline for automated testing and deployment.
+*   **Real-time Features**: Integrate WebSockets for real-time updates (e.g., ticket status, chat).
+*   **Advanced Analytics**: Integrate with dedicated analytics platforms or implement more complex data processing pipelines.
+*   **Caching**: Implement caching strategies (e.g., Redis) to improve performance for frequently accessed data.
+*   **Observability**: Enhance monitoring, logging, and tracing capabilities.
+*   **Scalability**: Explore Kubernetes deployment for advanced orchestration and scaling.
 
-## 🧪 Testing
+## License
 
-### Run All Tests
-```bash
-pytest
-```
-
-### Run Specific Test
-```bash
-pytest tests/services/test_auth.py
-```
-
-### Run with Coverage
-```bash
-pytest --cov=app tests/
-```
-
-### Test Configuration
-Tests are configured in `pytest.ini` and use fixtures defined in `tests/conftest.py`
-
-## 🗄️ Database Management
-
-### Create a Migration
-```bash
-alembic revision --autogenerate -m "Description of changes"
-```
-
-### Apply Migrations
-```bash
-alembic upgrade head
-```
-
-### Rollback Migration
-```bash
-alembic downgrade -1
-```
-
-### View Migration History
-```bash
-alembic current
-alembic history
-```
-
-## 🔐 Security Features
-
-- **JWT Authentication**: Secure token-based authentication
-- **Password Hashing**: bcrypt-based password encryption
-- **OTP Verification**: One-Time Password for enhanced security
-- **Role-Based Access Control**: Fine-grained permission management
-- **Client Middleware**: Multi-tenant data isolation
-- **Request Validation**: Pydantic schema validation
-- **CORS**: Configurable cross-origin requests
-
-## 📊 Monitoring & Logging
-
-The application uses structured logging with context information:
-
-```python
-logger.info("Event description", user_id=123, action="login")
-```
-
-Logs include:
-- Request details
-- User information
-- Database operations
-- Error traces
-
-## 📦 Dependencies Management
-
-Key dependencies:
-- FastAPI: Web framework
-- SQLAlchemy: ORM
-- Asyncpg: PostgreSQL async driver
-- Pydantic: Data validation
-- Alembic: Database migrations
-- Boto3: AWS S3 integration
-- Requests: HTTP client
-- Sendgrid: Email service
-
-## 🚢 Deployment
-
-### Docker Hub
-```bash
-docker build -t your-registry/crm-backend:latest .
-docker push your-registry/crm-backend:latest
-```
-
-### Environment Variables
-Ensure these are set in your deployment environment:
-- `DATABASE_URL`
-- `ADMIN_DATABASE_URL`
-- `SECRET_KEY`
-- `AWS_*` credentials
-- `SENDGRID_API_KEY`
-
-## 🤝 Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -m "Add your feature"`
-3. Push branch: `git push origin feature/your-feature`
-4. Submit a Pull Request
-
-## 📝 API Response Format
-
-All responses follow a consistent format:
-
-### Success Response
-```json
-{
-  "success": true,
-  "data": {
-    // Response data
-  },
-  "message": "Operation successful"
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": "Error message",
-  "detail": "Detailed error information"
-}
-```
-
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-- Verify PostgreSQL is running
-- Check `DATABASE_URL` in `.env`
-- Ensure database user has correct permissions
-
-### Migration Errors
-```bash
-# Check current migration status
-alembic current
-
-# View all migrations
-alembic history
-
-# Reset to specific version
-alembic downgrade <revision>
-```
-
-### Import Errors
-```bash
-# Reinstall dependencies
-pip install -r requirements.txt --force-reinstall
-```
-
-## 📚 Documentation
-
-- [Database Documentation](documentation/db-doc.md)
-- [Setup Instructions](scripts/README.md)
-
-## 👥 Support
-
-For issues, questions, or contributions, please open an issue on the GitHub repository.
-
-## 🔗 Related
-
-- API runs on port `80` (production) or `8000` (development)
-- Admin panel typically served on a separate frontend application
-- Database migrations are automatically tracked
-
----
-
-**Last Updated**: May 2026
-**API Version**: v1
-**Python Version**: 3.12+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
